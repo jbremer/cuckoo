@@ -771,8 +771,11 @@ class Pcap2(object):
                 md5 = hashlib.md5(recv.body or "").hexdigest()
                 sha1 = hashlib.sha1(recv.body or "").hexdigest()
 
-                filepath = os.path.join(self.network_path, sha1)
-                open(filepath, "wb").write(recv.body or "")
+                req_path = os.path.join(self.network_path, sha1)
+                open(req_path, "wb").write(sent.body or "")
+
+                resp_path = os.path.join(self.network_path, sha1)
+                open(resp_path, "wb").write(recv.body or "")
 
                 results["%s_ex" % protocol].append({
                     "src": srcip, "sport": srcport,
@@ -785,7 +788,9 @@ class Pcap2(object):
                     "response": response.decode("latin-1"),
                     "md5": md5,
                     "sha1": sha1,
-                    "path": filepath,
+                    "reqpath": req_path,
+                    "resppath": resp_path,
+                    "path": resp_path,  # Obsolete field.
                 })
 
         return results

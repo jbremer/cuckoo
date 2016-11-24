@@ -13,8 +13,6 @@ from cuckoo.common.objects import Dictionary
 from cuckoo.common.utils import parse_bool
 from cuckoo.misc import cwd
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
-
 log = logging.getLogger(__name__)
 
 _cache = {}

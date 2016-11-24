@@ -5,7 +5,6 @@
 
 import os
 import pytest
-import shutil
 import tempfile
 
 from cuckoo.common.config import Config, parse_options, emit_options, config
@@ -15,6 +14,8 @@ from cuckoo.compat.config import migrate
 from cuckoo.core.startup import check_configs
 from cuckoo.main import main
 from cuckoo.misc import set_cwd, cwd
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
 
 CONF_EXAMPLE = """
 [cuckoo]

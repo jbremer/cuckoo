@@ -11,10 +11,22 @@ from cuckoo.web.bin.utils import api_post, json_error_response
 from cuckoo.web.controllers.analysis.analysis import AnalysisController
 
 class AnalysisNetworkApi:
+    @staticmethod
+    def _request_response(report, protocol, request_index):
+        network = report["analysis"]["network"][protocol][request_index]
+        if "path" in network:
+            request = open(network["path"], "rb").read()
+            response = ""
+        elif "reqpath" in network:
+            request = open(network["reqpath"], "rb").read()
+            response = open(network["resppath"], "rb").read()
+        return base64.b64encode(request), base64.b64encode(response)
+
     @api_post
-    def http_response_data(request, body):
+    def http_data(request, body):
         task_id = body.get("task_id", None)
         request_body = body.get("request_body", False)
+        protocol = body.get("protocol", None)
         request_index = body.get("request_index", None)
 
         if not task_id or not isinstance(request_index, int):
@@ -25,14 +37,16 @@ class AnalysisNetworkApi:
 
             if request_body:
                 # @TO-DO: parse raw http request data, filter out body
-                data = report["analysis"]["network"]["http"][request_index]["data"]
+                req = ""
+                resp = report["analysis"]["network"]["http"][request_index]["data"]
             else:
-                data = report["analysis"]["network"]["http_ex"][request_index]["path"]
-
-            data = base64.b64encode(open(data, "rb").read())
+                req, resp = AnalysisNetworkApi._request_response(
+                    report, protocol, request_index
+                )
 
             return JsonResponse({
-                "body": data
+                "request": req,
+                "response": resp,
             }, safe=False)
         except Exception as e:
             return json_error_response("error: %s" % str(e))
