@@ -7,8 +7,13 @@ import logging
 import mock
 import os
 import tempfile
+import zipfile
+import json
+
+from StringIO import StringIO
 
 from cuckoo.core.database import Database
+from cuckoo.core.database import Task
 from cuckoo.common.files import Folders, Files
 from cuckoo.misc import cwd, set_cwd
 from cuckoo.processing.static import Static
@@ -54,8 +59,10 @@ enabled = off
 
 class TestWebInterface(object):
     def setup(self):
-        set_cwd(tempfile.mkdtemp())
-        Folders.create(cwd(), ["conf", "web"])
+        self.tmp_dir = tempfile.mkdtemp()
+        set_cwd(self.tmp_dir)
+
+        Folders.create(cwd(), ["conf", "web", "storage"])
 
         Files.create(cwd(), "conf/cuckoo.conf", CUCKOO_CONF)
         Files.create(cwd(), "conf/reporting.conf", REPORTING_CONF)
@@ -69,11 +76,114 @@ class TestWebInterface(object):
         os.environ["CUCKOO_APP"] = "web"
         os.environ["CUCKOO_CWD"] = cwd()
 
+        self._add_task(analysis_id=1)
+
     def test_index(self, client):
         assert client.get("/").status_code == 200
 
-    def test_index_post(self, client):
-        assert client.post("/").status_code == 405
+    def analysis_recent(self, client):
+        assert client.get("/analysis/").status_code == 200
+
+    def test_analysis_detail(self, client):
+        with mock.patch("cuckoo.web.controllers.analysis.analysis.AnalysisController") as ac:
+            ac._get_report.return_value = self._report(1)
+
+            pages = [
+                "summary",
+                "static",
+                "behavior",
+                "network",
+                "misp",
+                "dropped_files",
+                "dropped_buffers",
+                "procmemory",
+                "options"
+            ]
+
+            for page in pages:
+                assert client.get("/analysis/1/%s/" % page).status_code == 200
+
+    def test_analysis_reboot(self, client):
+        assert client.get("/analysis/%d/reboot/" % 1).status_code == 200
+
+        db = Database()
+        assert db.view_task(task_id=2).id == 2
+
+    # @TO-DO:
+    # figure out how to mock/patch `results_db.analysis.find(...)`
+    # figure out how to mock/patch `results_db.analysis.find_one(...)`
+    #
+    # def test_analysis_compare(self, client):
+    #     assert client.get("/analysis/1/compare/").status_code == 200
+    #
+    # def test_analysis_compare_with(self, client):
+    #     self._add_task(analysis_id=2)
+    #     assert client.get("/analysis/1/compare/2/").status_code == 200
+    #
+    # def test_analysis_compare_hash(self, client):
+    #     pass
+    #
+    # def test_analysis_latest(self, client):
+    #     with mock.patch("cuckoo.web.web.settings.MONGO") as mo:
+    #         mo.analysis.find_one.return_value = "test"
+    #
+    #         r = client.get("/analysis/latest/")
+    #         assert r.status_code == 301
+
+    def test_analysis_export(self, client):
+        with mock.patch("cuckoo.web.controllers.analysis.analysis.AnalysisController") as ac:
+            ac._get_report.return_value = self._report(analysis_id=1)
+
+            assert client.get("/analysis/%d/export/" % 1).status_code == 200
+
+            r = client.post("/analysis/%d/export/" % 1, data={
+                "dirs": ["shots", "memory", "logs", "reports", "network"],
+                "files": [
+                    "analysis.json", "dump_sorted.pcap", "cuckoo.log",
+                    "reboot.json", "tlsmaster.txt", "binary", "analysis.log",
+                    "task.json", "action.json", "files.json"
+                ]})
+
+            assert r.has_header("content-type") == True
+            assert r._headers["content-type"][1] == "application/zip"
+
+            zip = StringIO()
+            zip.write(r.content)
+            zip.seek(0)
+
+            zip = zipfile.ZipFile(zip)
+            assert zip.read("reports/report.json") == ""
+
+    def _report(self, analysis_id):
+        analysis_path = "%s/storage/analysis/%d/" % (cwd(), analysis_id)
+        zf = zipfile.ZipFile("tests/files/report.json.zip")
+        data = zf.read("report.json")
+        report = json.loads(data)
+        report["info"]["id"] = analysis_id
+        report["info"]["analysis_path"] = analysis_path
+
+        return report
+
+    def _add_task(self, analysis_id):
+        db = Database()
+        session = db.Session()
+        analysis_path = "%s/storage/analysis/%d/" % (cwd(), analysis_id)
+        Folders.copy("tests/files/sample_analysis_storage", analysis_path)
+
+        task_id = Database().add_path(
+            file_path="tests/files/pdf0.pdf",
+            timeout=0,
+            package="exe",
+        )
+
+        task = db.view_task(task_id)
+        db.set_status(task_id, "reported")
+        task.package = None
+        task.target = analysis_path + "binary"
+        session.commit()
+        session.flush()
+
+        return task
 
     def test_summary_office1(self, request):
         with mock.patch("cuckoo.web.controllers.analysis.analysis.AnalysisController") as ac:
