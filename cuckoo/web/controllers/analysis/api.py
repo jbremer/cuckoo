@@ -330,7 +330,7 @@ class AnalysisApi:
 
         tasks = sorted(tasks, key=lambda k: k["id"], reverse=True)
 
-        return JsonResponse(tasks, safe=False)
+        return JsonResponse({"status": True, "data": tasks}, safe=False)
 
     @api_post
     def tasks_stats(request, body):
