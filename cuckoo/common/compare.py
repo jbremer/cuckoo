@@ -89,6 +89,9 @@ def helper_percentages_mongo(results_db, tid1, tid2, ignore_categories=["misc"])
 
             for coid in pdoc["calls"]:
                 chunk = results_db.calls.find_one({"_id": coid}, {"calls.category": 1})
+                if not chunk or "calls" not in chunk:
+                    continue
+
                 category_counts = behavior_categories_percent(chunk["calls"])
                 for cat, count in category_counts.items():
                     if cat in ignore_categories:

@@ -472,7 +472,8 @@ def remove(request, task_id):
         # Delete calls.
         for process in analysis.get("behavior", {}).get("processes", []):
             for call in process["calls"]:
-                results_db.calls.remove({"_id": ObjectId(call)})
+                if isinstance(call, (ObjectId, unicode, bytes)):
+                    results_db.calls.remove({"_id": ObjectId(call)})
 
         # Delete analysis data.
         results_db.analysis.remove({"_id": ObjectId(analysis["_id"])})

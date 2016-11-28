@@ -4,19 +4,22 @@
 
 import django
 import logging
-import mock
 import os
 import tempfile
 import zipfile
 import json
 
 from StringIO import StringIO
+import pymongo
+import mock
 
 from cuckoo.core.database import Database
 from cuckoo.core.database import Task
 from cuckoo.common.files import Folders, Files
 from cuckoo.misc import cwd, set_cwd
 from cuckoo.processing.static import Static
+
+from django.conf import settings
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -32,6 +35,9 @@ connection =
 REPORTING_CONF = """
 [mongodb]
 enabled = on
+db = cuckootest
+store_memdump = yes
+paginate = 100
 
 [elasticsearch]
 enabled = off
@@ -75,6 +81,8 @@ class TestWebInterface(object):
         os.environ["CUCKOO_APP"] = "web"
         os.environ["CUCKOO_CWD"] = cwd()
 
+        self.mongo = settings.MONGO
+        self.mongo.analysis.drop()
         self._add_task(analysis_id=1)
 
     def test_index(self, client):
@@ -84,23 +92,20 @@ class TestWebInterface(object):
         assert client.get("/analysis/").status_code == 200
 
     def test_analysis_detail(self, client):
-        with mock.patch("cuckoo.web.controllers.analysis.analysis.AnalysisController") as ac:
-            ac._get_report.return_value = self._report(1)
+        pages = [
+            "summary",
+            "static",
+            "behavior",
+            "network",
+            "misp",
+            "dropped_files",
+            "dropped_buffers",
+            "procmemory",
+            "options"
+        ]
 
-            pages = [
-                "summary",
-                "static",
-                "behavior",
-                "network",
-                "misp",
-                "dropped_files",
-                "dropped_buffers",
-                "procmemory",
-                "options"
-            ]
-
-            for page in pages:
-                assert client.get("/analysis/1/%s/" % page).status_code == 200
+        for page in pages:
+            assert client.get("/analysis/1/%s/" % page).status_code == 200
 
     def test_analysis_reboot(self, client):
         assert client.get("/analysis/%d/reboot/" % 1).status_code == 200
@@ -108,60 +113,99 @@ class TestWebInterface(object):
         db = Database()
         assert db.view_task(task_id=2).id == 2
 
-    # @TO-DO:
-    # figure out how to mock/patch `results_db.analysis.find(...)`
-    # figure out how to mock/patch `results_db.analysis.find_one(...)`
+    def test_analysis_latest(self, client):
+        r = client.get("/analysis/latest/")
+        assert r.status_code in (301, 302)
+
+    def test_analysis_compare(self, client):
+        self._add_report(analysis_id=2)
+
+        assert client.get("/analysis/1/compare/").status_code == 200
+
+    def test_analysis_remove(self, client):
+        r = client.get("/analysis/remove/1/")
+        assert r.status_code == 200
+        assert "thanks for all the fish" in r.content.lower()
+        assert Database().view_task(1) is None
+
+    def test_analysis_compare_with(self, client):
+        self._add_task(analysis_id=2)
+        assert client.get("/analysis/1/compare/2/").status_code == 200
+
+    # def test_analysis_chunk(self, client):
+    #     # url(r"^chunk/(?P<task_id>\d+)/(?P<pid>\d+)/(?P<pagenum>\d+)/$", views.chunk),
+    #     # url(r"^filtered/(?P<task_id>\d+)/(?P<pid>\d+)/(?P<category>\w+)/$", views.filtered_chunk),
+    #     # @TODO: requires GridFS
+    #     r = client.get("/analysis/latest/")
+
+    # def test_analysis_search_behavior(self, client):
+    #     # url(r"^search/(?P<task_id>\d+)/$", views.search_behavior),
+    #     # @TODO: figure out how to deal with `results_db.calls.find({`
     #
-    # def test_analysis_compare(self, client):
-    #     assert client.get("/analysis/1/compare/").status_code == 200
-    #
-    # def test_analysis_compare_with(self, client):
-    #     self._add_task(analysis_id=2)
-    #     assert client.get("/analysis/1/compare/2/").status_code == 200
-    #
-    # def test_analysis_compare_hash(self, client):
-    #     pass
-    #
-    # def test_analysis_latest(self, client):
-    #     with mock.patch("cuckoo.web.web.settings.MONGO") as mo:
-    #         mo.analysis.find_one.return_value = "test"
-    #
-    #         r = client.get("/analysis/latest/")
-    #         assert r.status_code == 301
+    #     r = client.post("/analysis/search/1/", data={
+    #         "search": ""
+    #     })
+    #     assert r
+
+    # def test_analysis_search(self, client):
+    #     # @TODO: requires ElasticSearch
+    #     #
+    #     r = client.get("/analysis/search/")
+    #     assert r
+
+    def test_analysis_pending(self, client):
+        Database().set_status(1, "pending")
+        r = client.get("/analysis/pending/")
+        assert r.status_code == 200
+        assert "tests/files/pdf0.pdf" in r.content
+
+    # def test_analysis_pcapstream(self, client):
+    #     # url(r"^(?P<task_id>\d+)/pcapstream/(?P<conntuple>[.,\w]+)/$", views.pcapstream),
+    #     # @TODO: deal with GridFS
+    #     r = client.get("/1/pcapstream/?udp/")
+    #     assert r
+
+    def test_analysis_import(self, client):
+        r = client.get("/analysis/import/")
+        assert r.status_code == 200
 
     def test_analysis_export(self, client):
-        with mock.patch("cuckoo.web.controllers.analysis.analysis.AnalysisController") as ac:
-            ac._get_report.return_value = self._report(analysis_id=1)
+        assert client.get("/analysis/%d/export/" % 1).status_code == 200
 
-            assert client.get("/analysis/%d/export/" % 1).status_code == 200
+        r = client.post("/analysis/%d/export/" % 1, data={
+            "dirs": ["shots", "memory", "logs", "reports", "network"],
+            "files": [
+                "analysis.json", "dump_sorted.pcap", "cuckoo.log",
+                "reboot.json", "tlsmaster.txt", "binary", "analysis.log",
+                "task.json", "action.json", "files.json"
+            ]})
 
-            r = client.post("/analysis/%d/export/" % 1, data={
-                "dirs": ["shots", "memory", "logs", "reports", "network"],
-                "files": [
-                    "analysis.json", "dump_sorted.pcap", "cuckoo.log",
-                    "reboot.json", "tlsmaster.txt", "binary", "analysis.log",
-                    "task.json", "action.json", "files.json"
-                ]})
+        assert r.has_header("content-type") is True
+        assert r._headers["content-type"][1] == "application/zip"
 
-            assert r.has_header("content-type") == True
-            assert r._headers["content-type"][1] == "application/zip"
+        zip = StringIO()
+        zip.write(r.content)
+        zip.seek(0)
 
-            zip = StringIO()
-            zip.write(r.content)
-            zip.seek(0)
+        zip = zipfile.ZipFile(zip)
+        assert zip.read("reports/report.json") == ""
 
-            zip = zipfile.ZipFile(zip)
-            assert zip.read("reports/report.json") == ""
-
-    def _report(self, analysis_id):
+    def _add_report(self, analysis_id):
         analysis_path = "%s/storage/analysis/%d/" % (cwd(), analysis_id)
         zf = zipfile.ZipFile("tests/files/report.json.zip")
         data = zf.read("report.json")
         report = json.loads(data)
         report["info"]["id"] = analysis_id
         report["info"]["analysis_path"] = analysis_path
+        report["shots"] = []
 
-        return report
+        self.mongo.analysis.insert_one(report)
+
+        report = self.mongo.analysis.find_one({
+            "info.id": int(analysis_id)
+        }, sort=[("_id", pymongo.DESCENDING)])
+
+        assert report["info"]["id"] == analysis_id
 
     def _add_task(self, analysis_id):
         db = Database()
@@ -181,6 +225,8 @@ class TestWebInterface(object):
         task.target = analysis_path + "binary"
         session.commit()
         session.flush()
+
+        self._add_report(analysis_id=analysis_id)
 
         return task
 
