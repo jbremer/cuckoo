@@ -77,14 +77,12 @@ class TestWebInterface(object):
         Files.create(cwd(), "web/local_settings.py", "")
 
         django.setup()
-        Database().connect()
+        self.db = DatabaseInterface()
 
         os.environ["CUCKOO_APP"] = "web"
         os.environ["CUCKOO_CWD"] = cwd()
 
-        self.mongo = settings.MONGO
-        self.mongo.analysis.drop()
-        self._add_task(analysis_id=1)
+        self.db.add_task(analysis_id=1)
 
     def test_index(self, client):
         assert client.get("/").status_code == 200
@@ -119,7 +117,7 @@ class TestWebInterface(object):
         assert r.status_code in (301, 302)
 
     def test_analysis_compare(self, client):
-        self._add_report(analysis_id=2)
+        self.db.add_report(analysis_id=2)
 
         assert client.get("/analysis/1/compare/").status_code == 200
 
@@ -130,7 +128,7 @@ class TestWebInterface(object):
         assert Database().view_task(1) is None
 
     def test_analysis_compare_with(self, client):
-        self._add_task(analysis_id=2)
+        self.db.add_task(analysis_id=2)
         assert client.get("/analysis/1/compare/2/").status_code == 200
 
     # def test_analysis_chunk(self, client):
@@ -191,46 +189,6 @@ class TestWebInterface(object):
         zip = zipfile.ZipFile(zip)
         assert zip.read("reports/report.json") == ""
 
-    def _add_report(self, analysis_id):
-        analysis_path = "%s/storage/analysis/%d/" % (cwd(), analysis_id)
-        zf = zipfile.ZipFile("tests/files/report.json.zip")
-        data = zf.read("report.json")
-        report = json.loads(data)
-        report["info"]["id"] = analysis_id
-        report["info"]["analysis_path"] = analysis_path
-        report["shots"] = []
-
-        self.mongo.analysis.insert_one(report)
-
-        report = self.mongo.analysis.find_one({
-            "info.id": int(analysis_id)
-        }, sort=[("_id", pymongo.DESCENDING)])
-
-        assert report["info"]["id"] == analysis_id
-
-    def _add_task(self, analysis_id):
-        db = Database()
-        session = db.Session()
-        analysis_path = "%s/storage/analysis/%d/" % (cwd(), analysis_id)
-        Folders.copy("tests/files/sample_analysis_storage", analysis_path)
-
-        task_id = Database().add_path(
-            file_path="tests/files/pdf0.pdf",
-            timeout=0,
-            package="exe",
-        )
-
-        task = db.view_task(task_id)
-        db.set_status(task_id, "reported")
-        task.package = None
-        task.target = analysis_path + "binary"
-        session.commit()
-        session.flush()
-
-        self._add_report(analysis_id=analysis_id)
-
-        return task
-
     def test_summary_office1(self, request):
         with mock.patch("cuckoo.web.controllers.analysis.analysis.AnalysisController") as ac:
             ac._get_report.return_value = {
@@ -272,3 +230,132 @@ class TestWebInterface(object):
             assert "Sub AutoOpen" in r
             assert "process.Create" in r
             assert "notepad.exe" in r
+
+class TestApiInterface(object):
+    def setup(self):
+        self.tmp_dir = tempfile.mkdtemp()
+        set_cwd(self.tmp_dir)
+
+        Folders.create(cwd(), ["conf", "web", "storage"])
+
+        Files.create(cwd(), "conf/cuckoo.conf", CUCKOO_CONF)
+        Files.create(cwd(), "conf/reporting.conf", REPORTING_CONF)
+        Files.create(cwd(), "conf/routing.conf", ROUTING_CONF)
+        Files.create(cwd(), "web/.secret_key", "A"*40)
+        Files.create(cwd(), "web/local_settings.py", "")
+
+        django.setup()
+        self.db = DatabaseInterface()
+
+        os.environ["CUCKOO_APP"] = "web"
+        os.environ["CUCKOO_CWD"] = cwd()
+
+        self.db.add_task(analysis_id=1)
+
+    def test_analysis_tasks_list(self, client):
+        for i in range(2, 6):
+            self.db.add_task(analysis_id=i)
+    
+        # test limit filter
+        data = {"limit": 3, "offset": 0, "owner": "", "status": "reported"}
+    
+        r = self._post(client, "/analysis/api/tasks/list/", data)
+        assert len(r["data"]["tasks"]) == 3
+    
+        # test offset filter
+        data = {"limit": 1, "offset": 1, "owner": "", "status": "reported"}
+        r = self._post(client, "/analysis/api/tasks/list/", data)
+        assert r["data"]["tasks"][0]["id"] == 2
+    
+        # test status filter
+        Database().set_status(task_id=3, status="pending")
+        data = {"limit": 5, "offset": 0, "owner": "", "status": "pending"}
+        r = self._post(client, "/analysis/api/tasks/list/", data)
+        assert r["data"]["tasks"][0]["id"] == 3
+
+    def test_analysis_tasks_info(self, client):
+        self.db.add_task(analysis_id=2)
+    
+        data = {"task_ids": [1, 2]}
+        r = self._post(client, "/analysis/api/tasks/info/", data)
+    
+        assert len(r["data"].keys()) == 2
+        assert r["data"]["1"]["id"] == 1
+        assert r["data"]["2"]["id"] == 2
+
+    def test_analysis_tasks_recent(self, client):
+        # @TODO: fix /analysis/api/tasks/recent/ API call @ front-end, rtn format changed
+        for i in range(2, 6):
+            self.db.add_task(analysis_id=i)
+
+        # test normal operation
+        data = {
+            "limit": 5,
+            "offset": 0,
+            "cats": [],
+            "packs": [],
+            "score": ""
+        }
+
+        r = self._post(client, "/analysis/api/tasks/recent/", data)
+        assert len(r["data"]) == 5
+
+        # test category filter
+
+    def _post(self, client, url, data, validate=True):
+        data = json.dumps(data)
+        r = client.post(url, data=data,
+                        content_type='application/json',
+                        HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+        content = json.loads(r.content)
+        if validate:
+            assert r.status_code == 200
+            assert content["status"] is True
+        return content
+
+class DatabaseInterface:
+    def __init__(self):
+        Database().connect()
+        self.mongo = settings.MONGO
+        self.mongo.analysis.drop()
+
+    def add_report(self, analysis_id):
+        analysis_path = "%s/storage/analysis/%d/" % (cwd(), analysis_id)
+        zf = zipfile.ZipFile("tests/files/report.json.zip")
+        data = zf.read("report.json")
+        report = json.loads(data)
+        report["info"]["id"] = analysis_id
+        report["info"]["analysis_path"] = analysis_path
+        report["shots"] = []
+
+        self.mongo.analysis.insert_one(report)
+
+        report = self.mongo.analysis.find_one({
+            "info.id": int(analysis_id)
+        }, sort=[("_id", pymongo.DESCENDING)])
+
+        assert report["info"]["id"] == analysis_id
+
+    def add_task(self, analysis_id):
+        db = Database()
+        session = db.Session()
+        analysis_path = "%s/storage/analysis/%d/" % (cwd(), analysis_id)
+        Folders.copy("tests/files/sample_analysis_storage", analysis_path)
+
+        task_id = Database().add_path(
+            file_path="tests/files/pdf0.pdf",
+            timeout=0,
+            package="exe",
+        )
+
+        task = db.view_task(task_id)
+        db.set_status(task_id, "reported")
+        task.package = None
+        task.target = analysis_path + "binary"
+        session.commit()
+        session.flush()
+
+        self.add_report(analysis_id=analysis_id)
+
+        return task
