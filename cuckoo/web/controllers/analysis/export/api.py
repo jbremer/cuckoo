@@ -19,7 +19,8 @@ class ExportApi:
         taken_files = body.get("files", [])
 
         if not taken_dirs and not taken_files:
-            return JsonResponse({"size": 0, "size_human": "-"}, safe=False)
+            data = {"size": 0, "size_human": "-"}
+            return JsonResponse({"status": True, "data": data}, safe=False)
 
         if not task_id:
             return json_error_response("invalid task_id")
@@ -28,7 +29,7 @@ class ExportApi:
                                               taken_dirs=taken_dirs,
                                               taken_files=taken_files)
 
-        return JsonResponse(size, safe=False)
+        return JsonResponse({"status": True, "data": {"size": size}}, safe=False)
 
     @api_post
     def get_files(request, body):
@@ -48,4 +49,4 @@ class ExportApi:
         except Exception as e:
             return json_error_response(message=str(e))
 
-        return JsonResponse({"dirs": dirs, "files": files}, safe=False)
+        return JsonResponse({"status": True, "data": {"dirs": dirs, "files": files}}, safe=False)
