@@ -72,7 +72,7 @@ class AnalysisApi:
     @api_get
     def task_info(request, task_id):
         try:
-            data = AnalysisController.task_info(task_id)
+            data = AnalysisController.task_info(int(task_id))
             return JsonResponse({"status": True, "data": data}, safe=False)
         except Exception as e:
             return json_error_response(str(e))
@@ -103,7 +103,7 @@ class AnalysisApi:
 
             if db.delete_task(task_id):
                 Folders.delete(os.path.join(cwd(), "storage",
-                                            "analyses", "%d" % task_id))
+                                            "analyses", "%d" % int(task_id)))
             else:
                 return json_fatal_response("An error occurred while trying to "
                                            "delete the task")
@@ -130,8 +130,7 @@ class AnalysisApi:
                                        "reschedule the task")
 
     @api_get
-    def task_rereport(request, body):
-        task_id = body.get("task_id")
+    def task_rereport(request, task_id):
         if not task_id:
             return json_error_response("Task not set")
 
@@ -147,6 +146,7 @@ class AnalysisApi:
 
     @api_get
     def task_screenshots(request, task_id, screenshot=None):
+        task_id = int(task_id)
         folder_path = os.path.join(cwd(), "storage", "analyses", str(task_id), "shots")
 
         if os.path.exists(folder_path):
@@ -168,7 +168,7 @@ class AnalysisApi:
                 zip_data.seek(0)
 
                 response = file_response(data=zip_data,
-                                         filename="analysis_screenshots_%s.tar" % str(task_id),
+                                         filename="analysis_screenshots_%d.tar" % task_id,
                                          content_type="application/zip")
                 return response
 
@@ -177,7 +177,6 @@ class AnalysisApi:
     @api_get
     def task_report(request, task_id, report_format="json"):
         # @TO-DO: test /api/task/report/<task_id>/all/?tarmode=bz2
-        # duplicate filenames?
         task_id = int(task_id)
         tarmode = request.REQUEST.get("tarmode", "bz2")
 
@@ -229,7 +228,7 @@ class AnalysisApi:
             tar.close()
             s.seek(0)
 
-            response = file_response(data=s, filename="analysis_report_%s.tar" % str(task_id),
+            response = file_response(data=s, filename="analysis_report_%d.tar" % task_id,
                                      content_type="application/x-tar; charset=UTF-8")
             return response
         else:
@@ -238,8 +237,13 @@ class AnalysisApi:
         if os.path.exists(report_path):
             if report_format == "json":
                 response = file_response(data=open(report_path, "rb"),
-                                         filename="analysis_report_%s.json" % str(task_id),
+                                         filename="analysis_report_%s.json" % task_id,
                                          content_type="application/json; charset=UTF-8")
+                return response
+            elif report_format == "html":
+                response = file_response(data=open(report_path, "rb"),
+                                         filename="analysis_report_%d.html" % task_id,
+                                         content_type="text/plain; charset=UTF-8")
                 return response
             else:
                 return open(report_path, "rb").read()
