@@ -13,14 +13,14 @@ from StringIO import StringIO
 import pymongo
 import mock
 
-from cuckoo.core.database import Database
-from cuckoo.core.database import Task
+from cuckoo.core.database import Database, Task, Sample
 from cuckoo.common.files import Folders, Files
+from cuckoo.common.constants import CUCKOO_VERSION
 from cuckoo.misc import cwd, set_cwd
 from cuckoo.processing.static import Static
 
-from django.conf import settings
 from django.http.response import StreamingHttpResponse
+from django.conf import settings
 
 logging.basicConfig(level=logging.DEBUG)
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
@@ -32,6 +32,8 @@ from cuckoo.web.controllers.analysis.routes import AnalysisRoutes
 CUCKOO_CONF = """
 [database]
 connection =
+
+rooter = /tmp/cuckoo-rooter
 """
 
 REPORTING_CONF = """
@@ -190,6 +192,10 @@ class TestWebInterface(object):
         zip = zipfile.ZipFile(zip)
         assert zip.read("reports/report.json") == ""
 
+    def test_submission_index(self, client):
+        r = client.get("/submission/")
+        assert r.status_code == 200
+
     def test_summary_office1(self, request):
         with mock.patch("cuckoo.web.controllers.analysis.analysis.AnalysisController") as ac:
             ac._get_report.return_value = {
@@ -311,6 +317,47 @@ class TestApiInterface(object):
         #
         # r = self._post(client, "/analysis/api/tasks/recent/", data)
 
+    def test_cuckoo_status(self, client):
+        r = client.get("/cuckoo/api/status/")
+        content = json.loads(r.content)
+        assert r.status_code == 200
+        assert content["data"]["version"] == CUCKOO_VERSION
+
+    def test_cuckoo_vpn_status(self, client):
+        r = client.get("/cuckoo/api/vpn/status/")
+        assert r.status_code == 200
+
+    def test_files_view(self, client):
+        """
+        Function behaviour is depended on the type
+        of report that is currently being tested.
+        """
+        md5 = "c57bd2a0b85befb9f33175ac0b5fa710"
+        r = client.get("/files/api/view/md5/%s/" % md5)
+        content = json.loads(r.content)
+        assert content["data"]["sample"]["id"] == 1
+        assert "PDF document" in content["data"]["sample"]["file_type"]
+
+        sha256 = "fbb40b1e2773cb4b728733b6db3c8cc5a9b38576d7ebea935d3a0e158bda1114"
+        r = client.get("/files/api/view/sha256/%s/" % sha256)
+        content = json.loads(r.content)
+        assert content["data"]["sample"]["id"] == 1
+        assert "PDF document" in content["data"]["sample"]["file_type"]
+
+        r = client.get("/files/api/view/id/1/")
+        content = json.loads(r.content)
+        assert content["data"]["sample"]["id"] == 1
+        assert "PDF document" in content["data"]["sample"]["file_type"]
+
+    def test_files_get(self, client):
+        """
+        Function behaviour is depended on the type
+        of report that is currently being tested.
+        """
+        sha256 = "fbb40b1e2773cb4b728733b6db3c8cc5a9b38576d7ebea935d3a0e158bda1114"
+        r = client.get("/files/api/get/%s/" % sha256)
+        assert r.content.startswith("%PDF")
+
     def test_analysis_task_delete(self, client):
         r = client.get("/analysis/api/tasks/delete/1/")
         assert r.status_code == 200
@@ -390,9 +437,8 @@ class TestApiInterface(object):
 
     # def test_analysis_task_behavior_get_watcher(self, client):
     #     """
-    #     Warning: Function behaviour is highly depended on the type of report that
-    #     is currently being tested. For future reference; different report types (url/PE/office)
-    #     may be tested at which point this function should reflect those changes.
+    #     Function behaviour depends on the type of report that
+    #     is currently being tested.
     #     """
     #     r = self._post(client, "/analysis/api/task/behavior_get_watcher/", data={
     #         "task_id": 1,
@@ -463,5 +509,10 @@ class DatabaseInterface:
         session.flush()
 
         self.add_report(analysis_id=analysis_id)
+
+        _binaries = os.path.join(cwd(), "storage", "binaries")
+        if not os.path.exists(_binaries):
+            os.makedirs(_binaries)
+        Files.copy("tests/files/pdf0.pdf", "%s/fbb40b1e2773cb4b728733b6db3c8cc5a9b38576d7ebea935d3a0e158bda1114" % _binaries)
 
         return task
