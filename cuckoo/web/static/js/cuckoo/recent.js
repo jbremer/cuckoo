@@ -82,6 +82,7 @@ var Recent = function () {
             var self = this;
 
             function cb(data) {
+                data = data["data"];
                 self.results_callback(data);
                 self.toggle_loading();
             }
