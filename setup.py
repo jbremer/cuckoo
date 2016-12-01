@@ -25,6 +25,7 @@ if not os.path.isdir(os.path.join(monitor, latest)) and \
     sys.exit(
         "Failure locating the monitoring binaries that belong to the latest "
         "monitor release. Please include those to create a distribution."
+        "To run without monitoring binaries; set 'ONLYINSTALL=1' as environment variable"
     )
 
 manifest = []
