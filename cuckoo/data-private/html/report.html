@@ -1,6 +1,6 @@
-<!--
+{% from "_macros.html" import table with context %}<!--
   Cuckoo Sandbox - Automated Malware Analysis
-  Copyright (C) 2010-2016 Cuckoo Foundation.
+  Copyright (C) 2010-{{ datetime_now.strftime("%Y") }} Cuckoo Foundation.
   http://www.cuckoosandbox.org
 
   This file is part of Cuckoo.
@@ -205,22 +205,21 @@
                     {% endfor %}
 				</div>
 
-                {% if results.procmemory %}
-                    {% if results.procmemory[0].urls %}
-                        <!-- process memory dump -->
-                        <div class="block block-procmemory">
-                            <header class="block-header">
-                                <h4><i class="fa fa-barcode"></i> Process memory dump</h4>
-                            </header>
+                {% if results.procmemory and results.procmemory[0].urls %}
+                    <!-- process memory dump -->
+                    <div class="block block-procmemory">
+                        <header class="block-header">
+                            <h4><i class="fa fa-barcode"></i> Process memory dump</h4>
+                        </header>
 
-                            <ul class="list-reset list-simple">
-                                <li class="list-simple-title">URLs found in process memory</li>
-                                {% for url in results.procmemory[0].urls %}
-                                    <li class="monospace">{{ url }}</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    {% endif %}
+
+                        <ul class="list-reset list-simple">
+                            <li class="list-simple-title">URLs found in process memory</li>
+                            {% for url in results.procmemory[0].urls %}
+                                <li class="monospace">{{ url }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
                 {% endif %}
 
                 {% if results.network.dns or results.network.hosts %}
@@ -239,7 +238,7 @@
                                 </header>
 
                                 <!-- table with info -->
-                                <table>
+                                <table data-init="table">
                                     <thead>
                                         <tr>
                                             <th>Type</th>
@@ -274,12 +273,58 @@
                                     <h5>Hosts ({{ results.network.hosts|length }})</h5>
                                 </header>
 
-                                <table>
+                                <table data-init="table">
                                     <thead>
+                                        <tr class="table-display-config">
+                                            <th colspan="1">
+
+                                                <ul class="pagination">
+                                                    <li class="first"><a href="#"><i class="fa fa-fast-backward"></i></a></li>
+                                                    <li class="prev"><a href="#"><i class="fa fa-step-backward"></i></a></li>
+                                                    <li class="next"><a href="#"><i class="fa fa-step-forward"></i></a></li>
+                                                    <li class="last"><a href="#"><i class="fa fa-fast-forward"></i></a></li>
+                                                </ul>
+
+                                                <div class="results-per-page">
+                                                    <label for="rpp">Results per page:</label>
+                                                    <input type="text" name="rpp" />
+                                                    <i class="fa fa-caret-right"></i>
+                                                    <button data-action="update-rpp">show</button>
+                                                    <p>or</p>
+                                                    <button data-action="rpp-all">show all</button>
+                                                </div>
+
+                                            </th>
+                                        </tr>
                                         <tr>
-                                            <th>IP Address</th>
+                                            <th data-sort="string"><i class="fa"></i>IP Address</th>
                                         </tr>
                                     </thead>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="1">
+                                                <div class="table-display-config">
+
+                                                    <ul class="pagination">
+                                                        <li class="first"><a href="#"><i class="fa fa-fast-backward"></i></a></li>
+                                                        <li class="prev"><a href="#"><i class="fa fa-step-backward"></i></a></li>
+                                                        <li class="next"><a href="#"><i class="fa fa-step-forward"></i></a></li>
+                                                        <li class="last"><a href="#"><i class="fa fa-fast-forward"></i></a></li>
+                                                    </ul>
+
+                                                    <div class="results-per-page">
+                                                        <label for="rpp">Results per page:</label>
+                                                        <input type="text" data-action="rpp" name="rpp" />
+                                                        <i class="fa fa-caret-right"></i>
+                                                        <button data-action="update-rpp">show</button>
+                                                        <p>or</p>
+                                                        <button data-action="rpp-all">show all</button>
+                                                    </div>
+
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tfoot>
                                     <tbody>
                                         {% for host in results.network.hosts %}
                                             <tr>
@@ -288,7 +333,6 @@
                                         {% endfor %}
                                     </tbody>
                                 </table>
-
                             </section>
                         {% endif %}
                     </div>

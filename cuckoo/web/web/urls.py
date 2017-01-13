@@ -10,6 +10,7 @@ from django.conf.urls import include, url
 import dashboard.views
 import analysis.views
 import web.errors
+from cuckoo.web.controllers.analysis.export.html import wow
 
 urlpatterns = [
     url(r"^$", dashboard.views.index),
@@ -24,6 +25,7 @@ urlpatterns = [
     url(r"^pcap/", include("controllers.pcap.urls")),
     url(r"^machines/", include("controllers.pcap.urls")),
     url(r"^cuckoo/", include("controllers.cuckoo.urls")),
+    url(r"^pdf/$", wow, name="test123")
 ]
 
 handler404 = web.errors.handler404

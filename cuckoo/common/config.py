@@ -228,6 +228,7 @@ class Config(object):
                 "name": String(),
                 "company": String(),
                 "email": String(),
+                "endpoint": String()
             },
             "resultserver": {
                 "ip": String("192.168.56.1"),

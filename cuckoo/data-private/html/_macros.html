@@ -1,0 +1,65 @@
+{% macro table_interactive(columns, rows) -%}
+    <table data-target="collapse" data-init="table">
+        <thead>
+            <tr class="table-display-config">
+                <th colspan="{{ columns|length }}">
+                    <ul class="pagination">
+                        <li class="first"><a href="#"><i class="fa fa-fast-backward"></i></a></li>
+                        <li class="prev"><a href="#"><i class="fa fa-step-backward"></i></a></li>
+                        <li class="next"><a href="#"><i class="fa fa-step-forward"></i></a></li>
+                        <li class="last"><a href="#"><i class="fa fa-fast-forward"></i></a></li>
+                    </ul>
+                    <div class="results-per-page">
+                        <label for="rpp">Results per page:</label>
+                        <input type="text" name="rpp" />
+                        <i class="fa fa-caret-right"></i>
+                        <button data-action="update-rpp">show</button>
+                        <p>or</p>
+                        <button data-action="rpp-all">show all</button>
+                    </div>
+                </th>
+            </tr>
+            <tr>
+                {% for col in columns %}
+                    <th id="{{ col.name }}" data-sort="string"><i class="fa"></i> {{ col.name.capitalize() }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+
+        <tfoot>
+            <tr>
+                <td colspan="{{ columns|length }}">
+                    <div class="table-display-config">
+
+                        <ul class="pagination">
+                            <li class="first"><a href="#"><i class="fa fa-fast-backward"></i></a></li>
+                            <li class="prev"><a href="#"><i class="fa fa-step-backward"></i></a></li>
+                            <li class="next"><a href="#"><i class="fa fa-step-forward"></i></a></li>
+                            <li class="last"><a href="#"><i class="fa fa-fast-forward"></i></a></li>
+                        </ul>
+
+                        <div class="results-per-page">
+                            <label for="rpp">Results per page:</label>
+                            <input type="text" data-action="rpp" name="rpp" />
+                            <i class="fa fa-caret-right"></i>
+                            <button data-action="update-rpp">show</button>
+                            <p>or</p>
+                            <button data-action="rpp-all">show all</button>
+                        </div>
+
+                    </div>
+                </td>
+            </tr>
+        </tfoot>
+
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                {% for col in row %}
+                    <td><span class="monospace {{ col.class }}">{{ col.name }}</span></td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{%- endmacro %}
