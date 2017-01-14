@@ -19,7 +19,7 @@ from cuckoo.common.exceptions import (
 )
 from cuckoo.common.objects import File
 from cuckoo.common.files import Folders
-from cuckoo.core.database import Database, TASK_COMPLETED, TASK_REPORTED
+from cuckoo.core.database import db, TASK_COMPLETED, TASK_REPORTED
 from cuckoo.core.guest import GuestManager
 from cuckoo.core.plugins import RunAuxiliary, RunProcessing
 from cuckoo.core.plugins import RunSignatures, RunReporting
@@ -57,8 +57,7 @@ class AnalysisManager(threading.Thread):
         self.storage_binary = ""
         self.machine = None
 
-        self.db = Database()
-        self.task = self.db.view_task(task_id)
+        self.task = db.view_task(task_id)
         self.guest_manager = None
 
         self.route = None
@@ -100,7 +99,7 @@ class AnalysisManager(threading.Thread):
             # Check whether the file has been changed for some unknown reason.
             # And fail this analysis if it has been modified.
             # TODO Absorb the file upon submission.
-            sample = self.db.view_sample(self.task.sample_id)
+            sample = db.view_sample(self.task.sample_id)
             sha256 = File(self.task.target).get_sha256()
             if sha256 != sample.sha256:
                 log.error(
@@ -141,7 +140,7 @@ class AnalysisManager(threading.Thread):
 
     def store_task_info(self):
         """grab latest task from db (if available) and update self.task"""
-        dbtask = self.db.view_task(self.task.id)
+        dbtask = db.view_task(self.task.id)
         self.task = dbtask.to_dict()
 
         task_info_path = os.path.join(self.storage, "task.json")
@@ -333,8 +332,8 @@ class AnalysisManager(threading.Thread):
         assistance for an analysis through the services auxiliary module. This
         method just waits until the analysis is finished rather than actively
         trying to engage with the Cuckoo Agent."""
-        self.db.guest_set_status(self.task.id, "running")
-        while self.db.guest_get_status(self.task.id) == "running":
+        db.guest_set_status(self.task.id, "running")
+        while db.guest_get_status(self.task.id) == "running":
             time.sleep(1)
 
     def guest_manage(self, options):
@@ -349,18 +348,18 @@ class AnalysisManager(threading.Thread):
             time.sleep(options["timeout"])
         else:
             # Start the analysis.
-            self.db.guest_set_status(self.task.id, "starting")
+            db.guest_set_status(self.task.id, "starting")
             monitor = self.task.options.get("monitor", "latest")
             self.guest_manager.start_analysis(options, monitor)
 
             # In case the Agent didn't respond and we force-quit the analysis
             # at some point while it was still starting the analysis the state
             # will be "stop" (or anything but "running", really).
-            if self.db.guest_get_status(self.task.id) == "starting":
-                self.db.guest_set_status(self.task.id, "running")
+            if db.guest_get_status(self.task.id) == "starting":
+                db.guest_set_status(self.task.id, "running")
                 self.guest_manager.wait_for_completion()
 
-            self.db.guest_set_status(self.task.id, "stopping")
+            db.guest_set_status(self.task.id, "stopping")
 
     def launch_analysis(self):
         """Start analysis."""
@@ -419,10 +418,10 @@ class AnalysisManager(threading.Thread):
             self.interface = None
 
             # Mark the selected analysis machine in the database as started.
-            guest_log = self.db.guest_start(self.task.id,
-                                            self.machine.name,
-                                            self.machine.label,
-                                            machinery.__class__.__name__)
+            guest_log = db.guest_start(
+                self.task.id, self.machine.name, self.machine.label,
+                machinery.__class__.__name__
+            )
             logger(
                 "cuckoo.json", "Starting VM",
                 action="vm.start", status="pending",
@@ -548,7 +547,7 @@ class AnalysisManager(threading.Thread):
             # Mark the machine in the database as stopped. Unless this machine
             # has been marked as dead, we just keep it as "started" in the
             # database so it'll not be used later on in this session.
-            self.db.guest_stop(guest_log)
+            db.guest_stop(guest_log)
 
             # After all this, we can make the ResultServer forget about the
             # internal state for this analysis task.
@@ -633,7 +632,7 @@ class AnalysisManager(threading.Thread):
         try:
             self.launch_analysis()
 
-            self.db.set_status(self.task.id, TASK_COMPLETED)
+            db.set_status(self.task.id, TASK_COMPLETED)
 
             log.debug("Released database task #%d", self.task.id)
 
@@ -642,7 +641,7 @@ class AnalysisManager(threading.Thread):
                 self.store_task_info()
 
                 self.process_results()
-                self.db.set_status(self.task.id, TASK_REPORTED)
+                db.set_status(self.task.id, TASK_REPORTED)
 
             # We make a symbolic link ("latest") which links to the latest
             # analysis - this is useful for debugging purposes. This is only
@@ -697,7 +696,6 @@ class Scheduler(object):
     def __init__(self, maxcount=None):
         self.running = True
         self.cfg = Config()
-        self.db = Database()
         self.maxcount = maxcount
         self.total_analysis_count = 0
 
@@ -744,7 +742,7 @@ class Scheduler(object):
             "count": len(machinery.machines()),
         })
 
-        if len(machinery.machines()) > 1 and self.db.engine.name == "sqlite":
+        if len(machinery.machines()) > 1 and db.engine.name == "sqlite":
             log.warning("As you've configured Cuckoo to execute parallel "
                         "analyses, we recommend you to switch to a MySQL or"
                         "a PostgreSQL database as SQLite might cause some "
@@ -890,8 +888,8 @@ class Scheduler(object):
             # from the Analysis Manager to the Scheduler and then pass the
             # selected machine onto the Analysis Manager instance.
             task, available = None, False
-            for machine in self.db.get_available_machines():
-                task = self.db.fetch(machine=machine.name)
+            for machine in db.get_available_machines():
+                task = db.fetch(machine=machine.name)
                 if task:
                     break
 
@@ -902,7 +900,7 @@ class Scheduler(object):
             # machines is not a "service" machine (again, please refer to the
             # services auxiliary module for more information on service VMs).
             if not task and available:
-                task = self.db.fetch(service=False)
+                task = db.fetch(service=False)
 
             if task:
                 log.debug("Processing task #%s", task.id)

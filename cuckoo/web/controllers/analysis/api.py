@@ -1,5 +1,5 @@
 # Copyright (C) 2010-2013 Claudio Guarnieri.
-# Copyright (C) 2014-2016 Cuckoo Foundation.
+# Copyright (C) 2014-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -18,14 +18,13 @@ from django.conf import settings
 from django.http import JsonResponse, HttpResponse
 
 from cuckoo.misc import cwd
-from cuckoo.core.database import Database, Task, TASK_RUNNING, TASK_REPORTED, TASK_COMPLETED
+from cuckoo.core.database import db, Task, TASK_RUNNING, TASK_REPORTED, TASK_COMPLETED
 from cuckoo.common.files import Folders
 
 from cuckoo.web.bin.utils import api_post, api_get, file_response, json_error_response, json_fatal_response
 from cuckoo.web.controllers.analysis.analysis import AnalysisController
 
 results_db = settings.MONGO
-db = Database()
 
 class AnalysisApi:
     @api_post
@@ -294,8 +293,6 @@ class AnalysisApi:
                 "id": row["info"]["id"]
             })
 
-        db = Database()
-
         if tasks:
             q = db.Session().query(Task)
             q = q.filter(Task.id.in_([t["id"] for t in tasks]))
@@ -348,7 +345,6 @@ class AnalysisApi:
         if not isinstance(days, int):
             return json_error_response("parameter \"days\" not an integer")
 
-        db = Database()
         q = db.Session().query(Task)
         q = q.filter(Task.added_on.between(now - timedelta(days=days), now))
         q = q.order_by(asc(Task.added_on))

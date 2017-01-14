@@ -1,5 +1,5 @@
 # Copyright (C) 2010-2013 Claudio Guarnieri.
-# Copyright (C) 2014-2016 Cuckoo Foundation.
+# Copyright (C) 2014-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -11,7 +11,7 @@ import zipfile
 
 from cuckoo.common.files import Folders, Files
 from cuckoo.common.virustotal import VirusTotalAPI
-from cuckoo.core.database import Database
+from cuckoo.core.database import db
 from cuckoo.core.submit import SubmitManager
 from cuckoo.misc import set_cwd
 
@@ -33,8 +33,7 @@ class TestSubmitManager(object):
         self.dirpath = tempfile.mkdtemp()
         set_cwd(self.dirpath)
 
-        self.d = Database()
-        self.d.connect(dsn="sqlite:///:memory:")
+        db.connect(dsn="sqlite:///:memory:")
 
         Folders.create(self.dirpath, "conf")
         Files.create(self.dirpath, "conf/cuckoo.conf", CUCKOO_CONF)
@@ -64,7 +63,7 @@ class TestSubmitManager(object):
             data=self.files
         ) == 1
 
-        submit = self.d.view_submit(1)
+        submit = db.view_submit(1)
         assert isinstance(submit.data["data"], list)
         assert len(submit.data["errors"]) == 0
         assert os.path.exists(submit.data["data"][0]["data"])
@@ -80,7 +79,7 @@ class TestSubmitManager(object):
             data=self.urls
         ) == 1
 
-        submit = self.d.view_submit(1)
+        submit = db.view_submit(1)
         assert isinstance(submit.data["data"], list)
         assert len(submit.data["data"]) == 2
 
@@ -106,7 +105,7 @@ class TestSubmitManager(object):
                 data=self.hashes
             ) == 1
 
-            submit = self.d.view_submit(1)
+            submit = db.view_submit(1)
             assert isinstance(submit.data["data"], list)
             assert len(submit.data["data"]) == 1
 
@@ -127,7 +126,7 @@ class TestSubmitManager(object):
             data=self.urls
         ) == 1
 
-        submit = self.d.view_submit(1)
+        submit = db.view_submit(1)
         assert isinstance(submit.data["data"], list)
         assert len(submit.data["data"]) == 2
 
@@ -156,7 +155,7 @@ class TestSubmitManager(object):
 
         for task_id in tasks:
             url = self.urls[task_id - 1]
-            view_task = self.d.view_task(task_id=task_id, details=True)
+            view_task = db.view_task(task_id=task_id, details=True)
 
             assert view_task.target == url
             assert view_task.status == "pending"
@@ -176,7 +175,7 @@ class TestSubmitManager(object):
             data=self.files
         ) == 1
 
-        submit = self.d.view_submit(1)
+        submit = db.view_submit(1)
         assert isinstance(submit.data["data"], list)
         assert len(submit.data["errors"]) == 0
         assert os.path.exists(submit.data["data"][0]["data"])
@@ -204,7 +203,7 @@ class TestSubmitManager(object):
 
         for task_id in tasks:
             f = self.files[task_id - 1]
-            view_task = self.d.view_task(task_id=task_id, details=True)
+            view_task = db.view_task(task_id=task_id, details=True)
 
             assert view_task.target.endswith(ntpath.basename(f["name"]))
             assert view_task.status == "pending"
@@ -244,7 +243,7 @@ class TestSubmitManager(object):
         ]
 
         task_ids = self.submit_manager.submit(submit_id, selected_files)
-        t0, t1 = self.d.view_task(task_ids[0]), self.d.view_task(task_ids[1])
+        t0, t1 = db.view_task(task_ids[0]), db.view_task(task_ids[1])
         assert t0.category == "archive"
         assert t0.options == {
             "filename": "oledata.mso",

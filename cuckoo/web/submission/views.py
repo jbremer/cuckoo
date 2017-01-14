@@ -1,5 +1,5 @@
 # Copyright (C) 2010-2013 Claudio Guarnieri.
-# Copyright (C) 2014-2016 Cuckoo Foundation.
+# Copyright (C) 2014-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -10,7 +10,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from cuckoo.common.config import Config, parse_options, emit_options
 from cuckoo.common.files import Files
-from cuckoo.core.database import Database
+from cuckoo.core.database import db
 from cuckoo.core.rooter import vpns
 from cuckoo.misc import cwd
 
@@ -58,7 +58,7 @@ def render_index(request, kwargs={}):
 
     # Prepare a list of VM names, description label based on tags.
     machines = []
-    for machine in Database().list_machines():
+    for machine in db.list_machines():
         tags = []
         for tag in machine.tags:
             tags.append(tag.name)
@@ -119,7 +119,6 @@ def index(request, task_id=None, sha1=None):
     if not request.POST.get("human"):
         options["human"] = "0"
 
-    db = Database()
     task_ids = []
     task_machines = []
 
@@ -131,7 +130,7 @@ def index(request, task_id=None, sha1=None):
 
     # In case of resubmitting a file.
     if request.POST.get("category") == "file":
-        task = Database().view_task(task_id)
+        task = db.view_task(task_id)
 
         for entry in task_machines:
             task_id = db.add_path(file_path=task.target,
@@ -228,7 +227,7 @@ def index(request, task_id=None, sha1=None):
         return view_error(request, "Error adding task to Cuckoo's database.")
 
 def status(request, task_id):
-    task = Database().view_task(task_id)
+    task = db.view_task(task_id)
     if not task:
         return view_error(request, "The specified task doesn't seem to exist.")
     if task.status == "reported":
@@ -238,7 +237,7 @@ def status(request, task_id):
                            status=task.status, task_id=task_id)
 
 def resubmit(request, task_id):
-    task = Database().view_task(task_id)
+    task = db.view_task(task_id)
 
     if request.method == "POST":
         return index(request, task_id)
@@ -264,7 +263,7 @@ def submit_dropped(request, task_id, sha1):
     if request.method == "POST":
         return index(request, task_id, sha1)
 
-    task = Database().view_task(task_id)
+    task = db.view_task(task_id)
     if not task:
         return view_error(request, "No Task found with this ID")
 

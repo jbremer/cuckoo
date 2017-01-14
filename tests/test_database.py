@@ -8,7 +8,7 @@ import os
 import pytest
 import tempfile
 
-from cuckoo.core.database import Database, Task, AlembicVersion, SCHEMA_VERSION
+from cuckoo.core.database import db, Task, AlembicVersion, SCHEMA_VERSION
 from cuckoo.main import main, cuckoo_create
 from cuckoo.misc import set_cwd, cwd
 
@@ -18,13 +18,11 @@ class DatabaseEngine(object):
 
     def setup_class(self):
         set_cwd(tempfile.mkdtemp())
-
-        self.d = Database()
-        self.d.connect(dsn=self.URI)
+        db.connect(dsn=self.URI)
 
     def add_url(self, url, priority=1, status="pending"):
-        task_id = self.d.add_url(url, priority=priority)
-        self.d.set_status(task_id, status)
+        task_id = db.add_url(url, priority=priority)
+        db.set_status(task_id, status)
         return task_id
 
     def test_add_tasks(self):
@@ -33,18 +31,18 @@ class DatabaseEngine(object):
         os.close(fd)
 
         # Add task.
-        count = self.d.Session().query(Task).count()
-        self.d.add_path(sample_path)
-        assert self.d.Session().query(Task).count() == count + 1
+        count = db.Session().query(Task).count()
+        db.add_path(sample_path)
+        assert db.Session().query(Task).count() == count + 1
 
         # Add url.
-        self.d.add_url("http://foo.bar")
-        assert self.d.Session().query(Task).count() == count + 2
+        db.add_url("http://foo.bar")
+        assert db.Session().query(Task).count() == count + 2
 
     def test_processing_get_task(self):
         # First reset all existing rows so that earlier exceptions don't affect
         # this unit test run.
-        null, session = None, self.d.Session()
+        null, session = None, db.Session()
 
         session.query(Task).filter(
             Task.status == "completed", Task.processing == null
@@ -61,34 +59,34 @@ class DatabaseEngine(object):
         t6 = self.add_url("http://google.com/6", priority=1, status="completed")
         t7 = self.add_url("http://google.com/7", priority=1, status="completed")
 
-        assert self.d.processing_get_task("foo") == t5
-        assert self.d.processing_get_task("foo") == t2
-        assert self.d.processing_get_task("foo") == t1
-        assert self.d.processing_get_task("foo") == t3
-        assert self.d.processing_get_task("foo") == t4
-        assert self.d.processing_get_task("foo") == t6
-        assert self.d.processing_get_task("foo") == t7
-        assert self.d.processing_get_task("foo") is None
+        assert db.processing_get_task("foo") == t5
+        assert db.processing_get_task("foo") == t2
+        assert db.processing_get_task("foo") == t1
+        assert db.processing_get_task("foo") == t3
+        assert db.processing_get_task("foo") == t4
+        assert db.processing_get_task("foo") == t6
+        assert db.processing_get_task("foo") == t7
+        assert db.processing_get_task("foo") is None
 
     def test_error_exists(self):
         task_id = self.add_url("http://google.com/")
-        self.d.add_error("A"*1024, task_id)
-        assert len(self.d.view_errors(task_id)) == 1
-        self.d.add_error("A"*1024, task_id)
-        assert len(self.d.view_errors(task_id)) == 2
+        db.add_error("A"*1024, task_id)
+        assert len(db.view_errors(task_id)) == 1
+        db.add_error("A"*1024, task_id)
+        assert len(db.view_errors(task_id)) == 2
 
     def test_long_error(self):
         self.add_url("http://google.com/")
-        self.d.add_error("A"*1024, 1)
-        err = self.d.view_errors(1)
+        db.add_error("A"*1024, 1)
+        err = db.view_errors(1)
         assert err and len(err[0].message) == 1024
 
     def test_submit(self):
         dirpath = tempfile.mkdtemp()
-        submit_id = self.d.add_submit(dirpath, "files", {
+        submit_id = db.add_submit(dirpath, "files", {
             "foo": "bar",
         })
-        submit = self.d.view_submit(submit_id)
+        submit = db.view_submit(submit_id)
         assert submit.id == submit_id
         assert submit.tmp_path == dirpath
         assert submit.submit_type == "files"
@@ -97,19 +95,19 @@ class DatabaseEngine(object):
         }
 
     def test_connect_no_create(self):
-        AlembicVersion.__table__.drop(self.d.engine)
-        self.d.connect(dsn=self.URI, create=False)
-        assert "alembic_version" not in self.d.engine.table_names()
-        self.d.connect(dsn=self.URI)
-        assert "alembic_version" in self.d.engine.table_names()
+        AlembicVersion.__table__.drop(db.engine)
+        db.connect(dsn=self.URI, create=False)
+        assert "alembic_version" not in db.engine.table_names()
+        db.connect(dsn=self.URI)
+        assert "alembic_version" in db.engine.table_names()
 
 class TestConnectOnce(object):
     def setup(self):
         set_cwd(tempfile.mkdtemp())
         cuckoo_create()
 
-    @mock.patch("cuckoo.main.Database")
-    @mock.patch("cuckoo.apps.apps.Database")
+    @mock.patch("cuckoo.main.db")
+    @mock.patch("cuckoo.apps.apps.db")
     @mock.patch("cuckoo.apps.apps.process")
     def test_process_task(self, q, p1, p2):
         main.main(
@@ -118,15 +116,15 @@ class TestConnectOnce(object):
         )
 
         q.assert_called_once()
-        p2.return_value.connect.assert_called_once()
-        p1.return_value.connect.assert_not_called()
+        p2.connect.assert_called_once()
+        p1.connect.assert_not_called()
 
-    @mock.patch("cuckoo.main.Database")
-    @mock.patch("cuckoo.apps.apps.Database")
+    @mock.patch("cuckoo.main.db")
+    @mock.patch("cuckoo.apps.apps.db")
     @mock.patch("cuckoo.apps.apps.process")
     def test_process_tasks(self, q, p1, p2):
-        p1.return_value.processing_get_task.side_effect = 1, 2
-        p1.return_value.view_task.side_effect = [
+        p1.processing_get_task.side_effect = 1, 2
+        p1.view_task.side_effect = [
             Task(id=1, category="url", target="http://google.com/"),
             Task(id=2, category="url", target="http://google.nl/"),
         ]
@@ -137,8 +135,8 @@ class TestConnectOnce(object):
         )
 
         assert q.call_count == 2
-        p2.return_value.connect.assert_called_once()
-        p1.return_value.connect.assert_not_called()
+        p2.connect.assert_called_once()
+        p1.connect.assert_not_called()
 
 class TestSqlite3Memory(DatabaseEngine):
     URI = "sqlite:///:memory:"
@@ -161,8 +159,7 @@ class DatabaseMigrationEngine(object):
     def setup_class(cls):
         set_cwd(tempfile.mkdtemp())
 
-        cls.d = Database()
-        cls.d.connect(dsn=cls.URI, create=False)
+        db.connect(dsn=cls.URI, create=False)
 
         cuckoo_create(cfg={
             "cuckoo": {
@@ -172,7 +169,7 @@ class DatabaseMigrationEngine(object):
             },
         })
 
-        cls.s = cls.d.Session()
+        cls.s = db.Session()
         cls.execute_script(cls, open(cls.SRC, "rb").read())
         cls.migrate(cls)
 
@@ -194,9 +191,9 @@ class DatabaseMigrationEngine(object):
         assert machines[1][1] == 2042
 
     def test_long_error(self):
-        task_id = self.d.add_url("http://google.com/")
-        self.d.add_error("A"*1024, task_id)
-        err = self.d.view_errors(task_id)
+        task_id = db.add_url("http://google.com/")
+        db.add_error("A"*1024, task_id)
+        err = db.view_errors(task_id)
         assert err and len(err[0].message) == 1024
 
 class TestDatabaseMigration060PostgreSQL(DatabaseMigrationEngine):
@@ -210,7 +207,7 @@ class TestDatabaseMigration060PostgreSQL(DatabaseMigrationEngine):
 
     @staticmethod
     def migrate(cls):
-        tasks = cls.d.engine.execute(
+        tasks = db.engine.execute(
             "SELECT status FROM tasks ORDER BY id"
         ).fetchall()
         assert tasks[0][0] == "failure"
@@ -222,7 +219,7 @@ class TestDatabaseMigration060PostgreSQL(DatabaseMigrationEngine):
             standalone_mode=False
         )
 
-        tasks = cls.d.engine.execute(
+        tasks = db.engine.execute(
             "SELECT status FROM tasks ORDER BY id"
         ).fetchall()
         assert tasks[0][0] == "failed_analysis"
@@ -234,7 +231,7 @@ class TestDatabaseMigration060PostgreSQL(DatabaseMigrationEngine):
             standalone_mode=False
         )
 
-        tasks = cls.d.engine.execute(
+        tasks = db.engine.execute(
             "SELECT status, owner FROM tasks ORDER BY id"
         ).fetchall()
         assert tasks[0][0] == "failed_analysis"
@@ -252,7 +249,7 @@ class TestDatabaseMigration060SQLite3(DatabaseMigrationEngine):
 
     @staticmethod
     def migrate(cls):
-        tasks = cls.d.engine.execute(
+        tasks = db.engine.execute(
             "SELECT status FROM tasks ORDER BY id"
         ).fetchall()
         assert tasks[0][0] == "failure"
@@ -265,7 +262,7 @@ class TestDatabaseMigration060SQLite3(DatabaseMigrationEngine):
             standalone_mode=False
         )
 
-        tasks = cls.d.engine.execute(
+        tasks = db.engine.execute(
             "SELECT status FROM tasks ORDER BY id"
         ).fetchall()
         assert tasks[0][0] == "failed_analysis"
@@ -278,7 +275,7 @@ class TestDatabaseMigration060SQLite3(DatabaseMigrationEngine):
             standalone_mode=False
         )
 
-        tasks = cls.d.engine.execute(
+        tasks = db.engine.execute(
             "SELECT status, owner FROM tasks ORDER BY id"
         ).fetchall()
         assert tasks[0][0] == "failed_analysis"
@@ -297,7 +294,7 @@ class TestDatabaseMigration060MySQL(DatabaseMigrationEngine):
 
     @staticmethod
     def migrate(cls):
-        tasks = cls.d.engine.execute(
+        tasks = db.engine.execute(
             "SELECT status FROM tasks ORDER BY id"
         ).fetchall()
         assert tasks[0][0] == "success"
@@ -309,7 +306,7 @@ class TestDatabaseMigration060MySQL(DatabaseMigrationEngine):
             standalone_mode=False
         )
 
-        tasks = cls.d.engine.execute(
+        tasks = db.engine.execute(
             "SELECT status FROM tasks ORDER BY id"
         ).fetchall()
         assert tasks[0][0] == "completed"
@@ -321,7 +318,7 @@ class TestDatabaseMigration060MySQL(DatabaseMigrationEngine):
             standalone_mode=False
         )
 
-        tasks = cls.d.engine.execute(
+        tasks = db.engine.execute(
             "SELECT status, owner FROM tasks ORDER BY id"
         ).fetchall()
         assert tasks[0][0] == "completed"
@@ -335,7 +332,6 @@ def test_connect_default(p, q):
     set_cwd(tempfile.mkdtemp())
     cuckoo_create()
 
-    db = Database()
     db.connect(create=False)
     q.assert_called_once_with(
         "sqlite:///%s" % cwd("cuckoo.db"),
@@ -356,7 +352,6 @@ def test_connect_pg(p, q):
         }
     })
 
-    db = Database()
     db.connect(create=False)
     q.assert_called_once_with(
         "postgresql://foo:bar@localhost/foobar",

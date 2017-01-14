@@ -1,5 +1,5 @@
 # Copyright (C) 2010-2013 Claudio Guarnieri.
-# Copyright (C) 2014-2016 Cuckoo Foundation.
+# Copyright (C) 2014-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -11,9 +11,7 @@ import pymongo
 from django.conf import settings
 from django.http import Http404
 
-from cuckoo.core.database import Database, TASK_PENDING
-
-db = Database()
+from cuckoo.core.database import db, TASK_PENDING
 
 class AnalysisController:
     @staticmethod
@@ -46,7 +44,6 @@ class AnalysisController:
 
     @staticmethod
     def get_recent(limit=50, offset=0):
-        db = Database()
         tasks_files = db.list_tasks(
             limit=limit,
             offset=offset,

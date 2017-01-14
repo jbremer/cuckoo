@@ -1,5 +1,5 @@
 # Copyright (C) 2010-2013 Claudio Guarnieri.
-# Copyright (C) 2014-2016 Cuckoo Foundation.
+# Copyright (C) 2014-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -32,7 +32,7 @@ if os.environ.get("CUCKOO_APP") == "web":
     os.chdir(os.path.join(cuckoo.__path__[0], "web"))
     sys.path.insert(0, ".")
 
-    cuckoo.core.database.Database().connect()
+    cuckoo.core.database.db.connect()
 
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "web.settings")
 

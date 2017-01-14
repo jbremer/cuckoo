@@ -1,20 +1,20 @@
 # Copyright (C) 2010-2013 Claudio Guarnieri.
-# Copyright (C) 2014-2016 Cuckoo Foundation.
+# Copyright (C) 2014-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
 from django.views.decorators.http import require_safe
 
-from cuckoo.core.database import Database, TASK_PENDING, TASK_RUNNING
-from cuckoo.core.database import TASK_COMPLETED, TASK_RECOVERED, TASK_REPORTED
-from cuckoo.core.database import TASK_FAILED_ANALYSIS, TASK_FAILED_PROCESSING, TASK_FAILED_REPORTING
+from cuckoo.core.database import (
+    db, TASK_PENDING, TASK_RUNNING, TASK_COMPLETED, TASK_RECOVERED,
+    TASK_REPORTED, TASK_FAILED_ANALYSIS, TASK_FAILED_PROCESSING,
+    TASK_FAILED_REPORTING
+)
 
 from cuckoo.web.bin.utils import render_template
 
 @require_safe
 def index(request):
-    db = Database()
-
     report = dict(
         total_samples=db.count_samples(),
         total_tasks=db.count_tasks(),

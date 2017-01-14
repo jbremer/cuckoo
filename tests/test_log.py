@@ -58,7 +58,10 @@ def test_logging():
         "time": 1484232002,
     }
 
-def test_process_json_logging():
+@mock.patch("time.time")
+@mock.patch("cuckoo.main.process_tasks")
+@mock.patch("cuckoo.main.db")
+def test_process_json_logging(p0, p1, p2):
     set_cwd(tempfile.mkdtemp())
     cuckoo_create()
     init_logfile("process-p0.json")
@@ -69,14 +72,11 @@ def test_process_json_logging():
             action="hello.world", status="success"
         )
 
-    with mock.patch("cuckoo.main.Database") as p0:
-        with mock.patch("cuckoo.main.process_tasks") as p1:
-            with mock.patch("time.time") as p2:
-                p1.side_effect = process_tasks
-                p2.return_value = 1484232003
-                main.main(
-                    ("--cwd", cwd(), "process", "p0"), standalone_mode=False
-                )
+    p1.side_effect = process_tasks
+    p2.return_value = 1484232003
+    main.main(
+        ("--cwd", cwd(), "process", "p0"), standalone_mode=False
+    )
 
     assert json.load(open(cwd("log", "process-p0.json"), "rb")) == {
         "asctime": mock.ANY,

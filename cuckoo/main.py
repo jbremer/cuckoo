@@ -23,7 +23,7 @@ from cuckoo.common.exceptions import CuckooCriticalError
 from cuckoo.common.colors import yellow, red, green, bold
 from cuckoo.common.logo import logo
 from cuckoo.common.utils import exception_message
-from cuckoo.core.database import Database
+from cuckoo.core.database import db
 from cuckoo.core.init import write_supervisor_conf, write_cuckoo_conf
 from cuckoo.core.resultserver import ResultServer
 from cuckoo.core.scheduler import Scheduler
@@ -116,7 +116,7 @@ def cuckoo_init(level, ctx, cfg=None):
     else:
         init_console_logging(level)
 
-    Database().connect()
+    db.connect()
 
     init_modules()
     init_tasks()
@@ -260,7 +260,7 @@ def submit(ctx, target, url, options, package, custom, owner, timeout,
            baseline, remote, shuffle, pattern, max, unique):
     """Submit one or more files or URLs to Cuckoo."""
     init_console_logging(level=ctx.parent.level)
-    Database().connect()
+    db.connect()
 
     l = submit_tasks(
         target, options, package, custom, owner, timeout, priority, machine,
@@ -290,7 +290,6 @@ def process(ctx, instance, report, maxcount):
     if instance:
         init_logfile("process-%s.json" % instance)
 
-    db = Database()
     db.connect()
 
     # Regenerate a report.
@@ -384,7 +383,7 @@ def api(ctx, host, port, uwsgi, nginx):
         return
 
     init_console_logging(level=ctx.parent.level)
-    Database().connect()
+    db.connect()
     cuckoo_api(host, port, ctx.parent.level == logging.DEBUG)
 
 @main.command()
@@ -462,7 +461,7 @@ def web(ctx, args, host, port, uwsgi, nginx):
     from django.core.management import execute_from_command_line
 
     init_console_logging(level=ctx.parent.level)
-    Database().connect()
+    db.connect()
 
     if not args:
         execute_from_command_line(
@@ -489,7 +488,7 @@ def machine(ctx, vmname, ip, add, delete, platform, options, tags, interface,
         sys.exit("You have to specify a legitimate IP address for --add.")
 
     init_console_logging(level=ctx.parent.level)
-    Database().connect()
+    db.connect()
     cuckoo_machine(vmname, add, delete, ip, platform, options, tags,
                    interface, snapshot, resultserver)
 

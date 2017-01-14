@@ -1,5 +1,5 @@
 # Copyright (C) 2010-2013 Claudio Guarnieri.
-# Copyright (C) 2014-2016 Cuckoo Foundation.
+# Copyright (C) 2014-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -8,12 +8,10 @@ import os
 from django.http import JsonResponse, HttpResponse
 from wsgiref.util import FileWrapper
 
-from cuckoo.core.database import Database
+from cuckoo.core.database import db
 from cuckoo.misc import cwd
 
 from cuckoo.web.bin.utils import json_error_response, json_fatal_response, api_get
-
-db = Database()
 
 class FilesApi:
     @api_get

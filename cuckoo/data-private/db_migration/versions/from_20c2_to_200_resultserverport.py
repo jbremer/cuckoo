@@ -1,4 +1,4 @@
-# Copyright (C) 2016 Cuckoo Foundation.
+# Copyright (C) 2016-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -18,7 +18,7 @@ import logging
 import sqlalchemy as sa
 from alembic import op
 
-import cuckoo.core.database as db
+from cuckoo.core.database import Machine
 
 log = logging.getLogger(__name__)
 
@@ -91,7 +91,7 @@ def upgrade():
             sa.Column("resultserver_port", sa.Integer(), nullable=False),
             sa.PrimaryKeyConstraint("id"),
         )
-        op.bulk_insert(db.Machine.__table__, machines)
+        op.bulk_insert(Machine.__table__, machines)
 
 def downgrade():
     pass

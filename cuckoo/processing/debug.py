@@ -1,5 +1,5 @@
 # Copyright (C) 2010-2013 Claudio Guarnieri.
-# Copyright (C) 2014-2016 Cuckoo Foundation.
+# Copyright (C) 2014-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -10,7 +10,7 @@ import os
 
 from cuckoo.common.abstracts import Processing
 from cuckoo.common.exceptions import CuckooProcessingError
-from cuckoo.core.database import Database
+from cuckoo.core.database import db
 
 log = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ class Debug(Processing):
             debug["action"] = Logfile(self.action_path, is_json=True)
 
         debug["errors"] = []
-        for error in Database().view_errors(self.task["id"]):
+        for error in db.view_errors(self.task["id"]):
             debug["errors"].append(error.message)
 
         if os.path.exists(self.mitmerr_path):

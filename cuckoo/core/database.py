@@ -13,8 +13,7 @@ from cuckoo.common.exceptions import CuckooDatabaseError
 from cuckoo.common.exceptions import CuckooOperationalError
 from cuckoo.common.exceptions import CuckooDependencyError
 from cuckoo.common.objects import File, URL, Dictionary
-from cuckoo.common.utils import Singleton, classlock
-from cuckoo.common.utils import SuperLock, json_encode
+from cuckoo.common.utils import classlock, SuperLock, json_encode
 from cuckoo.misc import cwd
 
 from sqlalchemy import create_engine, Column, not_, func
@@ -388,23 +387,13 @@ class Database(object):
     This class handles the creation of the database user for internal queue
     management. It also provides some functions for interacting with it.
     """
-    __metaclass__ = Singleton
 
-    def __init__(self, schema_check=True, echo=False):
-        """
-        @param dsn: database connection string.
-        @param schema_check: disable or enable the db schema version check.
-        @param echo: echo sql queries.
-        """
+    def __init__(self):
         self._lock = SuperLock()
-        self.schema_check = schema_check
-        self.echo = echo
+        self.engine = None
 
-    def connect(self, schema_check=None, dsn=None, create=True):
+    def connect(self, schema_check=True, dsn=None, create=True, echo=False):
         """Connect to the database backend."""
-        if schema_check is not None:
-            self.schema_check = schema_check
-
         if not dsn:
             dsn = config("cuckoo:database:connection")
         if not dsn:
@@ -413,7 +402,7 @@ class Database(object):
         self._connect_database(dsn)
 
         # Disable SQL logging. Turn it on for debugging.
-        self.engine.echo = self.echo
+        self.engine.echo = echo
 
         # Connection timeout.
         self.engine.pool_timeout = config("cuckoo:database:timeout")
@@ -422,9 +411,9 @@ class Database(object):
         self.Session = sessionmaker(bind=self.engine)
 
         if create:
-            self._create_tables()
+            self._create_tables(schema_check)
 
-    def _create_tables(self):
+    def _create_tables(self, schema_check):
         """Creates all the database tables etc."""
         try:
             Base.metadata.create_all(self.engine)
@@ -452,7 +441,7 @@ class Database(object):
             # Check if db version is the expected one.
             last = tmp_session.query(AlembicVersion).first()
             tmp_session.close()
-            if last.version_num != SCHEMA_VERSION and self.schema_check:
+            if last.version_num != SCHEMA_VERSION and schema_check:
                 raise CuckooDatabaseError(
                     "DB schema version mismatch: found %s, expected %s. "
                     "Optionally make a backup and then apply the latest "
@@ -461,10 +450,6 @@ class Database(object):
                         last.version_num, SCHEMA_VERSION, cwd(raw=True),
                     )
                 )
-
-    def __del__(self):
-        """Disconnects pool."""
-        self.engine.dispose()
 
     def _connect_database(self, connection_string):
         """Connect to a Database.
@@ -1528,3 +1513,5 @@ class Database(object):
             log.debug("Database error getting new processing tasks: %s", e)
         finally:
             session.close()
+
+db = Database()

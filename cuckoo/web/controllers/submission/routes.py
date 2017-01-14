@@ -1,22 +1,20 @@
 # Copyright (C) 2010-2013 Claudio Guarnieri.
-# Copyright (C) 2014-2016 Cuckoo Foundation.
+# Copyright (C) 2014-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
 import os
 
 from django.conf import settings
-from django.shortcuts import render
 
 from cuckoo.core.rooter import vpns
 from cuckoo.common.config import Config
-from cuckoo.core.database import Database, Submit
+from cuckoo.core.database import db, Submit
 from cuckoo.misc import cwd
 from cuckoo.web.bin.utils import view_error, render_template
 
 cfg = Config("routing")
 results_db = settings.MONGO
-db = Database()
 
 class SubmissionRoutes:
     @staticmethod
@@ -50,7 +48,7 @@ class SubmissionRoutes:
 
         # Prepare a list of VM names, description label based on tags.
         machines = []
-        for machine in Database().list_machines():
+        for machine in db.list_machines():
             tags = []
             for tag in machine.tags:
                 tags.append(tag.name)

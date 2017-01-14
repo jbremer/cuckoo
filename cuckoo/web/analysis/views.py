@@ -1,5 +1,5 @@
 # Copyright (C) 2010-2013 Claudio Guarnieri.
-# Copyright (C) 2014-2016 Cuckoo Foundation.
+# Copyright (C) 2014-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -24,7 +24,7 @@ from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from bson.objectid import ObjectId
 from gridfs import GridFS
 
-from cuckoo.core.database import Database, TASK_PENDING, TASK_COMPLETED
+from cuckoo.core.database import db, TASK_PENDING, TASK_COMPLETED
 from cuckoo.common.files import Files
 from cuckoo.common.utils import json_default
 from cuckoo.misc import cwd
@@ -36,7 +36,6 @@ fs = GridFS(results_db)
 
 @require_safe
 def index(request):
-    db = Database()
     tasks_files = db.list_tasks(limit=50, category="file", not_status=TASK_PENDING)
     tasks_urls = db.list_tasks(limit=50, category="url", not_status=TASK_PENDING)
 
@@ -72,7 +71,6 @@ def index(request):
 
 @require_safe
 def pending(request):
-    db = Database()
     tasks = db.list_tasks(status=TASK_PENDING)
 
     pending = []
@@ -478,7 +476,6 @@ def remove(request, task_id):
         results_db.analysis.remove({"_id": ObjectId(analysis["_id"])})
 
     # Delete from SQL db.
-    db = Database()
     db.delete_task(task_id)
 
     return render_template(request, "success.html", **{
@@ -612,7 +609,6 @@ def import_analysis(request):
     if request.method == "GET":
         return render_template(request, "analysis/import.html")
 
-    db = Database()
     task_ids = []
 
     for analysis in request.FILES.getlist("analyses"):
@@ -723,7 +719,7 @@ def import_analysis(request):
         })
 
 def reboot_analysis(request, task_id):
-    task_id = Database().add_reboot(task_id=task_id)
+    task_id = db.add_reboot(task_id=task_id)
 
     return render_template(request, "submission/reboot.html", **{
         "task_id": task_id,

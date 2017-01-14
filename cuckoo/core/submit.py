@@ -1,5 +1,5 @@
 # Copyright (C) 2010-2013 Claudio Guarnieri.
-# Copyright (C) 2014-2016 Cuckoo Foundation.
+# Copyright (C) 2014-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -12,11 +12,9 @@ from cuckoo.common.exceptions import CuckooOperationalError
 from cuckoo.common.files import Folders, Files, Storage
 from cuckoo.common.utils import validate_url, validate_hash
 from cuckoo.common.virustotal import VirusTotalAPI
-from cuckoo.core.database import Database
+from cuckoo.core.database import db
 
 log = logging.getLogger(__name__)
-
-db = Database()
 
 class SubmitManager(object):
     """Submit Manager.
@@ -94,7 +92,7 @@ class SubmitManager(object):
         if not submit_data["data"]:
             raise Exception("Unknown submit type or no data could be processed")
 
-        return Database().add_submit(path_tmp, submit_type, submit_data)
+        return db.add_submit(path_tmp, submit_type, submit_data)
 
     @staticmethod
     def get_files(submit_id, password=None, astree=False):
@@ -104,7 +102,7 @@ class SubmitManager(object):
         @param astree: sflock option; determines the format in which the files are returned
         @return: A tree of files
         """
-        submit = Database().view_submit(submit_id)
+        submit = db.view_submit(submit_id)
 
         files, duplicates = [], []
 
@@ -154,7 +152,7 @@ class SubmitManager(object):
                tags=None, memory=False, enforce_timeout=False, **kwargs):
         # TODO Kwargs contains various analysis options that have to be taken
         # into account sooner or later.
-        ret, db = [], Database()
+        ret = []
         submit = db.view_submit(submit_id)
 
         for entry in selected_files:

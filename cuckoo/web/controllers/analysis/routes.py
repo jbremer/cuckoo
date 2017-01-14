@@ -1,5 +1,5 @@
 # Copyright (C) 2010-2013 Claudio Guarnieri.
-# Copyright (C) 2014-2016 Cuckoo Foundation.
+# Copyright (C) 2014-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -11,8 +11,7 @@ from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.core.urlresolvers import reverse
 
-from cuckoo.core.database import Database, TASK_PENDING
-
+from cuckoo.core.database import db, TASK_PENDING
 from cuckoo.web.controllers.analysis.export.export import ExportController
 from cuckoo.web.controllers.analysis.analysis import AnalysisController
 from cuckoo.web.bin.utils import view_error, render_template
@@ -22,7 +21,6 @@ results_db = settings.MONGO
 class AnalysisRoutes:
     @staticmethod
     def recent(request):
-        db = Database()
         tasks_files = db.list_tasks(limit=50, category="file", not_status=TASK_PENDING)
         tasks_urls = db.list_tasks(limit=50, category="url", not_status=TASK_PENDING)
 
@@ -122,7 +120,7 @@ class AnalysisRoutes:
 
     @staticmethod
     def reboot(request, task_id):
-        task_obj = Database().add_reboot(task_id=task_id)
+        task_obj = db.add_reboot(task_id=task_id)
         return render_template(request, "submission/reboot.html",
                                task_id=task_id, task_obj=task_obj,
                                baseurl=request.build_absolute_uri("/")[:-1])

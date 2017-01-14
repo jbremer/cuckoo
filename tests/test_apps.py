@@ -252,7 +252,7 @@ def test_process_dodelete(r, s, p):
     assert not os.path.exists(filepath2)
 
 @mock.patch("cuckoo.apps.apps.process")
-@mock.patch("cuckoo.apps.apps.Database")
+@mock.patch("cuckoo.apps.apps.db")
 def test_process_log_taskid(p, q):
     set_cwd(tempfile.mkdtemp())
     cuckoo_create()

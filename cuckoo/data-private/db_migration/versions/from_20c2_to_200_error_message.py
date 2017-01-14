@@ -1,4 +1,4 @@
-# Copyright (C) 2016 Cuckoo Foundation.
+# Copyright (C) 2016-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -17,7 +17,7 @@ import logging
 import sqlalchemy as sa
 from alembic import op
 
-import cuckoo.core.database as db
+from cuckoo.core.database import Error
 
 log = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ def upgrade():
             sa.Column("message", sa.Text(), nullable=False),
             sa.Column("task_id", sa.Integer(), sa.ForeignKey("tasks.id"), nullable=False),
         )
-        op.bulk_insert(db.Error.__table__, errors)
+        op.bulk_insert(Error.__table__, errors)
 
 def downgrade():
     pass

@@ -1,4 +1,4 @@
-# Copyright (C) 2016 Cuckoo Foundation.
+# Copyright (C) 2016-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -8,7 +8,7 @@ from cuckoo.common.abstracts import Machinery
 from cuckoo.common.config import Config
 from cuckoo.common.files import Files, Folders
 from cuckoo.common.utils import Singleton
-from cuckoo.core.database import Database
+from cuckoo.core.database import db
 from cuckoo.core.resultserver import ResultServer
 from cuckoo.misc import set_cwd, cwd
 
@@ -53,7 +53,6 @@ resultserver_port = 4242
 
     Singleton._instances[ResultServer] = mock()
 
-    db = Database()
     db.connect()
     m = Machinery()
     m.set_options(Config("virtualbox"))

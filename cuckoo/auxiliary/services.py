@@ -1,5 +1,5 @@
 # Copyright (C) 2010-2013 Claudio Guarnieri.
-# Copyright (C) 2014-2016 Cuckoo Foundation.
+# Copyright (C) 2014-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -8,10 +8,9 @@ import time
 
 from cuckoo.common.abstracts import Auxiliary
 from cuckoo.common.config import Config
-from cuckoo.core.database import Database
+from cuckoo.core.database import db
 
 log = logging.getLogger(__name__)
-db = Database()
 
 class Services(Auxiliary):
     """Allows one or more additional VMs to be run next to an analysis. Either

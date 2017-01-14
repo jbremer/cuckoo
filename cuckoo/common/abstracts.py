@@ -1,5 +1,5 @@
 # Copyright (C) 2010-2013 Claudio Guarnieri.
-# Copyright (C) 2014-2016 Cuckoo Foundation.
+# Copyright (C) 2014-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -18,7 +18,7 @@ from cuckoo.common.exceptions import CuckooReportError
 from cuckoo.common.exceptions import CuckooDependencyError
 from cuckoo.common.files import Folders
 from cuckoo.common.objects import Dictionary
-from cuckoo.core.database import Database
+from cuckoo.core.database import db
 from cuckoo.misc import cwd
 
 try:
@@ -68,12 +68,10 @@ class Machinery(object):
         self.module_name = ""
         self.options = None
         self.options_globals = Config()
-        # Database pointer.
-        self.db = Database()
 
         # Machine table is cleaned to be filled from configuration file
         # at each start.
-        self.db.clean_machines()
+        db.clean_machines()
 
     def pcap_path(self, task_id):
         """Returns the .pcap path for this task id."""
@@ -149,16 +147,13 @@ class Machinery(object):
                     if value and isinstance(value, basestring):
                         machine[key] = value.strip()
 
-                self.db.add_machine(name=machine.id,
-                                    label=machine.label,
-                                    ip=machine.ip,
-                                    platform=machine.platform,
-                                    options=machine.options,
-                                    tags=machine.tags,
-                                    interface=machine.interface,
-                                    snapshot=machine.snapshot,
-                                    resultserver_ip=ip,
-                                    resultserver_port=port)
+                db.add_machine(
+                    name=machine.id, label=machine.label, ip=machine.ip,
+                    platform=machine.platform, options=machine.options,
+                    tags=machine.tags, interface=machine.interface,
+                    snapshot=machine.snapshot, resultserver_ip=ip,
+                    resultserver_port=port
+                )
             except (AttributeError, CuckooOperationalError) as e:
                 log.warning("Configuration details about machine %s "
                             "are missing: %s", machine_id, e)
@@ -203,13 +198,13 @@ class Machinery(object):
         """List virtual machines.
         @return: virtual machines list
         """
-        return self.db.list_machines()
+        return db.list_machines()
 
     def availables(self):
         """How many machines are free.
         @return: free machines count.
         """
-        return self.db.count_machines_available()
+        return db.count_machines_available()
 
     def acquire(self, machine_id=None, platform=None, tags=None):
         """Acquire a machine to start analysis.
@@ -219,23 +214,23 @@ class Machinery(object):
         @return: machine or None.
         """
         if machine_id:
-            return self.db.lock_machine(label=machine_id)
+            return db.lock_machine(label=machine_id)
         elif platform:
-            return self.db.lock_machine(platform=platform, tags=tags)
+            return db.lock_machine(platform=platform, tags=tags)
         else:
-            return self.db.lock_machine(tags=tags)
+            return db.lock_machine(tags=tags)
 
     def release(self, label=None):
         """Release a machine.
         @param label: machine name.
         """
-        self.db.unlock_machine(label)
+        db.unlock_machine(label)
 
     def running(self):
         """Returns running virtual machines.
         @return: running virtual machines list.
         """
-        return self.db.list_machines(locked=True)
+        return db.list_machines(locked=True)
 
     def shutdown(self):
         """Shutdown the machine manager. Kills all alive machines.
@@ -256,7 +251,7 @@ class Machinery(object):
         @param label: virtual machine label
         @param status: new virtual machine status
         """
-        self.db.set_machine_status(label, status)
+        db.set_machine_status(label, status)
 
     def start(self, label, task):
         """Start a machine.
@@ -369,7 +364,7 @@ class LibVirtMachinery(Machinery):
 
         conn = self._connect()
 
-        vm_info = self.db.view_machine_by_label(label)
+        vm_info = db.view_machine_by_label(label)
 
         snapshot_list = self.vms[label].snapshotListNames(flags=0)
 

@@ -10,7 +10,7 @@ import thread
 import time
 
 from cuckoo.common.colors import red, yellow, cyan
-from cuckoo.core.database import Database
+from cuckoo.core.database import db
 from cuckoo.misc import cwd
 
 _tasks = {}
@@ -29,7 +29,6 @@ class DatabaseHandler(logging.Handler):
 
     def emit(self, record):
         if hasattr(record, "task_id"):
-            db = Database()
             db.add_error(self.format(record), int(record.task_id))
 
 class TaskHandler(logging.Handler):

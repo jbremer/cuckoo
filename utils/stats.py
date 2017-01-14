@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2014-2016 Cuckoo Foundation.
+# Copyright (C) 2014-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -9,17 +9,17 @@ import time
 
 sys.path.insert(0, os.path.join(os.path.abspath(os.path.dirname(__file__)), ".."))
 
-from cuckoo.core.database import Database, TASK_PENDING, TASK_RUNNING
-from cuckoo.core.database import TASK_COMPLETED, TASK_RECOVERED, TASK_REPORTED
-from cuckoo.core.database import TASK_FAILED_ANALYSIS, TASK_FAILED_PROCESSING, TASK_FAILED_REPORTING
+from cuckoo.core.database import (
+    db, TASK_PENDING, TASK_RUNNING, TASK_COMPLETED, TASK_RECOVERED,
+    TASK_REPORTED, TASK_FAILED_ANALYSIS, TASK_FAILED_PROCESSING,
+    TASK_FAILED_REPORTING
+)
 
 def timestamp(dt):
     """Returns the timestamp of a datetime object."""
     return time.mktime(dt.timetuple())
 
 def main():
-    db = Database()
-
     print("%d samples in db" % db.count_samples())
     print("%d tasks in db" % db.count_tasks())
 

@@ -1,5 +1,5 @@
 # Copyright (C) 2010-2013 Claudio Guarnieri.
-# Copyright (C) 2014-2016 Cuckoo Foundation.
+# Copyright (C) 2014-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -20,11 +20,10 @@ from cuckoo.common.constants import CUCKOO_GUEST_COMPLETED
 from cuckoo.common.constants import CUCKOO_GUEST_FAILED
 from cuckoo.common.exceptions import CuckooGuestError
 from cuckoo.common.utils import TimeoutServer
-from cuckoo.core.database import Database
+from cuckoo.core.database import db
 from cuckoo.misc import cwd
 
 log = logging.getLogger(__name__)
-db = Database()
 
 def analyzer_zipfile(platform, monitor):
     """Creates the Zip file that is sent to the Guest."""

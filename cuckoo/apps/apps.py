@@ -16,8 +16,7 @@ from cuckoo.common.config import config
 from cuckoo.common.exceptions import CuckooOperationalError
 from cuckoo.common.objects import File
 from cuckoo.common.utils import to_unicode
-from cuckoo.core.database import Database
-from cuckoo.core.database import TASK_FAILED_PROCESSING, TASK_REPORTED
+from cuckoo.core.database import db, TASK_FAILED_PROCESSING, TASK_REPORTED
 from cuckoo.core.log import task_log_start, task_log_stop
 from cuckoo.core.plugins import RunProcessing, RunSignatures, RunReporting
 from cuckoo.misc import cwd, mkdir
@@ -100,8 +99,6 @@ def submit_tasks(target, options, package, custom, owner, timeout, priority,
                  machine, platform, memory, enforce_timeout, clock, tags,
                  remote, pattern, maxcount, is_unique, is_url, is_baseline,
                  is_shuffle):
-    db = Database()
-
     data = dict(
         package=package or "",
         timeout=timeout,
@@ -222,8 +219,6 @@ def process(target, copy_path, task):
             )
 
 def process_task(task):
-    db = Database()
-
     try:
         task_log_start(task["id"])
 
@@ -246,8 +241,6 @@ def process_task(task):
 
 def process_tasks(instance, maxcount):
     count = 0
-    db = Database()
-
     try:
         while not maxcount or count != maxcount:
             task_id = db.processing_get_task(instance)

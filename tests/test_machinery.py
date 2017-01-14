@@ -1,4 +1,4 @@
-# Copyright (C) 2016 Cuckoo Foundation.
+# Copyright (C) 2016-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -21,12 +21,19 @@ class TestVirtualbox(object):
         Folders.create(cwd(), "conf")
         write_cuckoo_conf()
 
-        with mock.patch("cuckoo.common.abstracts.Database") as p:
-            p.return_value = mock.MagicMock()
-            self.m = VirtualBox()
+        self.p1 = mock.patch("cuckoo.common.abstracts.db")
+        self.p2 = mock.patch("cuckoo.machinery.virtualbox.db")
+        self.db1 = self.p1.start()
+        self.db2 = self.p2.start()
 
-        self.m.db.clean_machines.assert_called_once()
+        self.m = VirtualBox()
+
         self.m.set_options(Config("virtualbox"))
+        self.db1.clean_machines.assert_called_once()
+
+    def teardown(self):
+        self.p1.stop()
+        self.p2.stop()
 
     def test_invalid_vboxmanage_configuration(self):
         with mock.patch.dict(self.m.options.virtualbox.__dict__, {
@@ -50,18 +57,18 @@ class TestVirtualbox(object):
                 self.m._initialize_check()
             e.match("run in a non-supported mode")
 
-    def test_status_vboxmanage_failure(self):
-        with mock.patch("cuckoo.machinery.virtualbox.Popen") as p:
-            p.return_value.communicate.return_value = "", ""
-            p.return_value.returncode = 42
-            assert self.m._status("label") == self.m.ERROR
+    @mock.patch("cuckoo.machinery.virtualbox.Popen")
+    def test_status_vboxmanage_failure(self, p):
+        p.return_value.communicate.return_value = "", ""
+        p.return_value.returncode = 42
+        assert self.m._status("label") == self.m.ERROR
 
         p.assert_called_once()
         p.call_args_list[0] = (
             config("virtualbox:virtualbox:path"),
             "showvminfo", "label", "--machinereadable"
         )
-        self.m.db.set_machine_status.assert_called_once_with(
+        self.db1.set_machine_status.assert_called_once_with(
             "label", self.m.ERROR
         )
 
@@ -101,7 +108,7 @@ class TestVirtualbox(object):
             config("virtualbox:virtualbox:path"),
             "showvminfo", "label", "--machinereadable"
         )
-        self.m.db.set_machine_status.assert_called_once_with(
+        self.db1.set_machine_status.assert_called_once_with(
             "label", "poweroff"
         )
 
@@ -175,7 +182,7 @@ class TestVirtualbox(object):
             options = {}
 
         self.m._status = mock.MagicMock(return_value=self.m.POWEROFF)
-        self.m.db.view_machine_by_label.return_value = machine_no_snapshot()
+        self.db2.view_machine_by_label.return_value = machine_no_snapshot()
         self.m._wait_status = mock.MagicMock(return_value=None)
 
         p1 = mock.MagicMock()
@@ -212,7 +219,7 @@ class TestVirtualbox(object):
             options = {}
 
         self.m._status = mock.MagicMock(return_value=self.m.POWEROFF)
-        self.m.db.view_machine_by_label.return_value = machine_with_snapshot()
+        self.db2.view_machine_by_label.return_value = machine_with_snapshot()
         self.m._wait_status = mock.MagicMock(return_value=None)
 
         p1 = mock.MagicMock()
@@ -240,7 +247,7 @@ class TestVirtualbox(object):
             options = {}
 
         self.m._status = mock.MagicMock(return_value=self.m.POWEROFF)
-        self.m.db.view_machine_by_label.return_value = machine_no_snapshot()
+        self.db2.view_machine_by_label.return_value = machine_no_snapshot()
         self.m._wait_status = mock.MagicMock(return_value=None)
 
         with pytest.raises(CuckooMachineError) as e:
@@ -264,7 +271,7 @@ class TestVirtualbox(object):
             options = {}
 
         self.m._status = mock.MagicMock(return_value=self.m.POWEROFF)
-        self.m.db.view_machine_by_label.return_value = machine_no_snapshot()
+        self.db2.view_machine_by_label.return_value = machine_no_snapshot()
         self.m._wait_status = mock.MagicMock(return_value=None)
 
         with pytest.raises(CuckooMachineError) as e:
@@ -287,7 +294,7 @@ class TestVirtualbox(object):
             options = {}
 
         self.m._status = mock.MagicMock(return_value=self.m.POWEROFF)
-        self.m.db.view_machine_by_label.return_value = machine_no_snapshot()
+        self.db2.view_machine_by_label.return_value = machine_no_snapshot()
         self.m._wait_status = mock.MagicMock(return_value=None)
 
         p1 = mock.MagicMock()
@@ -317,7 +324,7 @@ class TestVirtualbox(object):
             options = {}
 
         self.m._status = mock.MagicMock(return_value=self.m.POWEROFF)
-        self.m.db.view_machine_by_label.return_value = machine_with_snapshot()
+        self.db2.view_machine_by_label.return_value = machine_with_snapshot()
         self.m._wait_status = mock.MagicMock(return_value=None)
 
         with pytest.raises(CuckooMachineError) as e:
@@ -500,12 +507,19 @@ class TestBrokenMachine(object):
         Folders.create(cwd(), "conf")
         write_cuckoo_conf()
 
-        with mock.patch("cuckoo.common.abstracts.Database") as p:
-            p.return_value = mock.MagicMock()
-            self.m = VirtualBox()
+        self.p1 = mock.patch("cuckoo.common.abstracts.db")
+        self.p2 = mock.patch("cuckoo.machinery.virtualbox.db")
+        self.db1 = self.p1.start()
+        self.db2 = self.p2.start()
 
-        self.m.db.clean_machines.assert_called_once()
+        self.m = VirtualBox()
+        self.db1.clean_machines.assert_called_once()
+
         self.m.set_options(Config("virtualbox"))
+
+    def teardown(self):
+        self.db1.stop()
+        self.db2.stop()
 
     def test_missing_snapshot(self):
         class machine_no_snapshot(object):
@@ -513,7 +527,7 @@ class TestBrokenMachine(object):
             options = {}
 
         self.m._status = mock.MagicMock(return_value=self.m.POWEROFF)
-        self.m.db.view_machine_by_label.return_value = machine_no_snapshot()
+        self.db2.view_machine_by_label.return_value = machine_no_snapshot()
 
         p1 = mock.MagicMock()
         p1.wait.return_value = 0

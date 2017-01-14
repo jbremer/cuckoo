@@ -1,5 +1,5 @@
 # Copyright (C) 2010-2013 Claudio Guarnieri.
-# Copyright (C) 2014-2016 Cuckoo Foundation.
+# Copyright (C) 2014-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -10,7 +10,7 @@ from cuckoo.common.abstracts import Processing
 from cuckoo.common.config import emit_options
 from cuckoo.common.objects import File
 from cuckoo.common.utils import json_decode
-from cuckoo.core.database import Database, Task
+from cuckoo.core.database import db, Task
 from cuckoo.misc import cwd, version
 
 log = logging.getLogger(__name__)
@@ -24,7 +24,6 @@ class AnalysisInfo(Processing):
         """
         self.key = "info"
 
-        db = Database()
         dbtask = db.view_task(self.task["id"], details=True)
 
         # Fetch the task.

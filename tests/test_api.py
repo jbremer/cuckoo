@@ -1,39 +1,28 @@
-# Copyright (C) 2016 Cuckoo Foundation.
+# Copyright (C) 2016-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
 import io
 import json
 import os.path
-import shutil
 import tempfile
 import time
 import werkzeug
 
 from cuckoo.apps import api
-from cuckoo.common.files import Folders, Files
-from cuckoo.core.database import Database, TASK_COMPLETED, TASK_RUNNING
+from cuckoo.common.files import Files
+from cuckoo.core.database import db, TASK_COMPLETED, TASK_RUNNING
+from cuckoo.main import cuckoo_create
 from cuckoo.misc import set_cwd
-
-CUCKOO_CONF = """
-[cuckoo]
-tmppath = /tmp
-"""
 
 class TestAPI(object):
     def setup(self):
-        self.dirpath = tempfile.mkdtemp()
-        set_cwd(self.dirpath)
-        Database().connect()
+        set_cwd(tempfile.mkdtemp())
+        cuckoo_create()
+        db.connect()
 
         api.app.config["TESTING"] = True
         self.app = api.app.test_client()
-
-        Folders.create(self.dirpath, "conf")
-        Files.create(self.dirpath, "conf/cuckoo.conf", CUCKOO_CONF)
-
-    def teardown(self):
-        shutil.rmtree(self.dirpath)
 
     def test_list_tasks(self):
         # Test an empty task list.
@@ -50,7 +39,7 @@ class TestAPI(object):
         assert len(r["tasks"]) == 1
         assert r["tasks"][0]["id"] == 1
 
-        # Offest 1, limit 1.
+        # Offset 1, limit 1.
         r = json.loads(self.app.get("/tasks/list/1/1").data)
         assert len(r["tasks"]) == 1
         assert r["tasks"][0]["id"] == 2
@@ -94,11 +83,11 @@ class TestAPI(object):
         target = json.loads(r.data)["task"]["target"]
         assert os.path.exists(target)
 
-        Database().set_status(task_id, TASK_RUNNING)
+        db.set_status(task_id, TASK_RUNNING)
         r = self.app.get("/tasks/delete/%s" % task_id)
         assert r.status_code == 500
 
-        Database().set_status(task_id, TASK_COMPLETED)
+        db.set_status(task_id, TASK_COMPLETED)
         r = self.app.get("/tasks/delete/%s" % task_id)
         assert r.status_code == 200
 
@@ -171,11 +160,11 @@ class TestAPI(object):
         b = self.create_task()
 
         t1 = int(time.time())
-        Database().set_status(a, TASK_COMPLETED)
+        db.set_status(a, TASK_COMPLETED)
 
         time.sleep(1)
         t2 = int(time.time())
-        Database().set_status(b, TASK_COMPLETED)
+        db.set_status(b, TASK_COMPLETED)
 
         r = json.loads(self.app.get("/tasks/list", query_string={
             "completed_after": t1,
@@ -191,20 +180,20 @@ class TestAPI(object):
         a = self.create_task()
         b = self.create_task()
 
-        Database().set_status(a, TASK_COMPLETED)
+        db.set_status(a, TASK_COMPLETED)
 
         r = json.loads(self.app.get("/tasks/list", query_string={
             "status": TASK_COMPLETED,
         }).data)
         assert len(r["tasks"]) == 1
 
-        Database().set_status(a, TASK_COMPLETED)
+        db.set_status(a, TASK_COMPLETED)
         r = json.loads(self.app.get("/tasks/list", query_string={
             "status": TASK_COMPLETED,
         }).data)
         assert len(r["tasks"]) == 1
 
-        Database().set_status(b, TASK_COMPLETED)
+        db.set_status(b, TASK_COMPLETED)
         r = json.loads(self.app.get("/tasks/list", query_string={
             "status": TASK_COMPLETED,
         }).data)
@@ -233,3 +222,11 @@ class TestAPI(object):
             "url": url,
         })
         return json.loads(r.data)["task_id"]
+
+    def test_reboot(self):
+        tid1 = self.create_task()
+        r = self.app.get("/tasks/reboot/%d" % tid1)
+        tid2 = json.loads(r.data)["reboot_id"]
+        task = db.view_task(tid2)
+        assert task.custom == "%d" % tid1
+        assert task.package == "reboot"

@@ -1,18 +1,16 @@
-# Copyright (C) 2016 Cuckoo Foundation.
+# Copyright (C) 2016-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
 import tempfile
 
-from cuckoo.core.database import Database
+from cuckoo.core.database import db
 from cuckoo.misc import set_cwd
 from cuckoo.processing.debug import Debug
 from cuckoo.processing.static import Static
 
 class TestProcessing:
     def test_debug(self):
-        db = Database()
-
         set_cwd(tempfile.mkdtemp())
 
         db.connect(dsn="sqlite:///:memory:")

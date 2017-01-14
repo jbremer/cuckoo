@@ -1,5 +1,5 @@
 # Copyright (C) 2010-2013 Claudio Guarnieri.
-# Copyright (C) 2014-2016 Cuckoo Foundation.
+# Copyright (C) 2014-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -15,13 +15,10 @@ from flask import Flask, request, jsonify, make_response
 
 from cuckoo.common.files import Files, Folders
 from cuckoo.common.utils import parse_bool
-from cuckoo.core.database import Database, Task
+from cuckoo.core.database import db, Task
 from cuckoo.core.database import TASK_REPORTED, TASK_COMPLETED, TASK_RUNNING
 from cuckoo.core.rooter import rooter
 from cuckoo.misc import cwd, version, decide_cwd
-
-# Global Database object.
-db = Database()
 
 # Initialize Flask app.
 app = Flask(__name__)
@@ -365,7 +362,7 @@ def rereport(task_id):
 
 @app.route("/tasks/reboot/<int:task_id>")
 def reboot(task_id):
-    reboot_id = Database().add_reboot(task_id=task_id)
+    reboot_id = db.add_reboot(task_id=task_id)
     if not reboot_id:
         return json_error(404, "Error creating reboot task")
 
@@ -575,4 +572,4 @@ def cuckoo_api(hostname, port, debug):
 
 if os.environ.get("CUCKOO_APP") == "api":
     decide_cwd(exists=True)
-    Database().connect()
+    db.connect()

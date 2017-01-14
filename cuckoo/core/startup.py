@@ -21,8 +21,9 @@ import cuckoo
 from cuckoo.common.colors import red, green, yellow
 from cuckoo.common.config import Config, config
 from cuckoo.common.exceptions import CuckooStartupError, CuckooDatabaseError
-from cuckoo.core.database import Database, TASK_RUNNING
-from cuckoo.core.database import TASK_FAILED_ANALYSIS, TASK_PENDING
+from cuckoo.core.database import (
+    db, TASK_RUNNING, TASK_FAILED_ANALYSIS, TASK_PENDING
+)
 from cuckoo.core.log import init_logger
 from cuckoo.core.rooter import rooter, vpns
 from cuckoo.misc import cwd, version
@@ -146,7 +147,6 @@ def init_logfile(logfile):
 
 def init_tasks():
     """Check tasks and reschedule uncompleted ones."""
-    db = Database()
     cfg = Config()
 
     log.debug("Checking for locked tasks..")
@@ -416,7 +416,6 @@ def cuckoo_clean():
 
     # Initialize the database connection.
     try:
-        db = Database()
         db.connect(schema_check=False)
     except CuckooDatabaseError as e:
         # If something is screwed due to incorrect database migrations or bad

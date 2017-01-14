@@ -1,11 +1,11 @@
-# Copyright (C) 2014-2016 Cuckoo Foundation.
+# Copyright (C) 2014-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
 import sys
 
 from cuckoo.common.config import Config
-from cuckoo.core.database import Database
+from cuckoo.core.database import db
 from cuckoo.misc import cwd
 
 def update_conf(machinery, vmname, ip, platform, options, tags, interface,
@@ -64,7 +64,6 @@ def update_conf(machinery, vmname, ip, platform, options, tags, interface,
 
 def cuckoo_machine(vmname, add, delete, ip, platform, options, tags,
                    interface, snapshot, resultserver):
-    db = Database()
     conf = Config()
 
     if resultserver:

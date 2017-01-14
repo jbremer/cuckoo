@@ -1,5 +1,5 @@
 # Copyright (C) 2010-2013 Claudio Guarnieri.
-# Copyright (C) 2014-2016 Cuckoo Foundation.
+# Copyright (C) 2014-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -13,14 +13,14 @@ from logging.config import fileConfig
 # This line sets up loggers basically.
 fileConfig(context.config.config_file_name)
 
-from cuckoo.core.database import Base, Database
+from cuckoo.core.database import Base, db
 from cuckoo.misc import set_cwd
 
 set_cwd(context.get_x_argument(as_dictionary=True)["cwd"])
-Database().connect(schema_check=False, create=False)
+db.connect(schema_check=False, create=False)
 
 # Get database connection string from cuckoo configuration.
-url = Database().engine.url.__to_string__(hide_password=False)
+url = db.engine.url.__to_string__(hide_password=False)
 target_metadata = Base.metadata
 
 def run_migrations_offline():

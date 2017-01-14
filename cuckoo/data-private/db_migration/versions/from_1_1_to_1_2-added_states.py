@@ -1,5 +1,5 @@
 # Copyright (C) 2010-2013 Claudio Guarnieri.
-# Copyright (C) 2014-2016 Cuckoo Foundation.
+# Copyright (C) 2014-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -22,7 +22,7 @@ from datetime import datetime
 from alembic import op
 from dateutil.parser import parse
 
-import cuckoo.core.database as db
+from cuckoo.core.database import Task
 
 def upgrade():
     conn = op.get_bind()
@@ -121,7 +121,7 @@ def upgrade():
             op.execute('COMMIT')
 
             # Insert data.
-            op.bulk_insert(db.Task.__table__, tasks_data)
+            op.bulk_insert(Task.__table__, tasks_data)
             # Enable foreign key.
             op.execute('SET foreign_key_checks = 1')
 
@@ -153,7 +153,7 @@ def upgrade():
             )
 
             # Insert data.
-            op.bulk_insert(db.Task.__table__, tasks_data)
+            op.bulk_insert(Task.__table__, tasks_data)
 
 def downgrade():
     pass

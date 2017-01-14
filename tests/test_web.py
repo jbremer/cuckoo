@@ -1,4 +1,4 @@
-# Copyright (C) 2016 Cuckoo Foundation.
+# Copyright (C) 2016-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -8,7 +8,7 @@ import mock
 import os
 import tempfile
 
-from cuckoo.core.database import Database
+from cuckoo.core.database import db
 from cuckoo.common.files import Folders, Files
 from cuckoo.misc import cwd, set_cwd
 from cuckoo.processing.static import Static
@@ -63,7 +63,7 @@ class TestWebInterface(object):
         Files.create(cwd(), "web/local_settings.py", "")
 
         django.setup()
-        Database().connect()
+        db.connect()
 
         os.environ["CUCKOO_APP"] = "web"
         os.environ["CUCKOO_CWD"] = cwd()
