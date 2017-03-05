@@ -702,8 +702,10 @@ class Config(object):
                 "encoding": String("latin-1"),
                 "calls": Boolean(True),
             },
-            "reporthtml": {
+            "singlefile": {
                 "enabled": Boolean(False),
+                "html": Boolean(False),
+                "pdf": Boolean(False),
             },
             "misp": {
                 "enabled": Boolean(False),
