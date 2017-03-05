@@ -8,16 +8,16 @@ import pytest
 import tempfile
 
 from cuckoo.common.exceptions import CuckooProcessingError
+from cuckoo.common.files import Files
 from cuckoo.core.database import Database
 from cuckoo.main import cuckoo_create
 from cuckoo.misc import set_cwd
 from cuckoo.processing.behavior import ProcessTree
 from cuckoo.processing.debug import Debug
-from cuckoo.processing.network import Pcap
-from cuckoo.processing.network import Pcap2
+from cuckoo.processing.network import Pcap, Pcap2
 from cuckoo.processing.platform.windows import RebootReconstructor
 from cuckoo.processing.screenshots import Screenshots
-from cuckoo.processing.static import Static
+from cuckoo.processing.static import Static, WindowsScriptFile
 from cuckoo.processing.strings import Strings
 from cuckoo.processing.virustotal import VirusTotal
 
@@ -470,3 +470,11 @@ def test_parse_cmdline():
     assert rb.parse_cmdline(u"stuff.exe \u4404\u73a8 \uecbc\uee9e") == (
         "stuff.exe", [u"\u4404\u73a8", u"\uecbc\uee9e"]
     )
+
+def test_wsf_language():
+    wsf = WindowsScriptFile(Files.temp_put(
+        "<script language='JScript.Encode'></script>"
+    ))
+    wsf.decode = mock.MagicMock(return_value="codehere")
+    assert wsf.run() == ["codehere"]
+    wsf.decode.assert_called_once()
