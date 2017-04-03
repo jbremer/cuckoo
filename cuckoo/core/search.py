@@ -14,27 +14,6 @@ db = Database()
 class Search(object):
     """Search wrapper around MongoDB & ElasticSearch."""
 
-    def mongo_extract_database(self, allresults):
-        analyses = []
-
-        for results in allresults:
-            for result in results:
-                new = db.view_task(result["info"]["id"])
-
-                if not new:
-                    continue
-
-                new = new.to_dict()
-
-                if result["info"]["category"] == "file":
-                    if new["sample_id"]:
-                        sample = db.view_sample(new["sample_id"])
-                        if sample:
-                            new["sample"] = sample.to_dict()
-
-                analyses.append(new)
-        return analyses
-
     def guess_term(self, value):
         if ishash(value, 32):
             return "md5"
@@ -77,13 +56,12 @@ class Search(object):
         value = re.escape(value)
 
         if not term or term in mongo_elastic_queries:
-            mongo_results = mongo.search(term, value)
+            mongo_results = list(mongo.search(term, value))
             elastic_results = elastic.search(term, value)
-            return self.mongo_extract_database(mongo_results) + elastic_results
+            return mongo_results + elastic_results
         elif term in elastic_queries:
             return elastic.search(term, value)
         else:
-            mongo_results = mongo.search(term, value)
-            return self.mongo_extract_database(mongo_results)
+            return list(mongo.search(term, value))
 
 searcher = Search()

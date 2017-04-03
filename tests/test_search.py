@@ -32,6 +32,7 @@ report = {
                 "http://ns.adobe.com/xap/1.0/sType/ResourceEvent",
             ],
         },
+        "category": "file",
     },
     "behavior": {
         "summary": {
@@ -270,7 +271,6 @@ def test_mongo_search():
     do_search(None, report["target"]["file"]["urls"][0])
     do_search("args", report["behavior"]["processes"][0]["command_line"])
     do_search("regkey_read", report["behavior"]["summary"]["regkey_read"][0])
-    do_search("regkey_opened", report["behavior"]["summary"]["regkey_opened"][0])
     do_search("regkey_written", report["behavior"]["summary"]["regkey_written"][0])
 
 def test_elastic_init():

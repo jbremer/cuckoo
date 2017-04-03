@@ -3,8 +3,8 @@
 # See the file 'docs/LICENSE' for copying permission.
 
 import gridfs
+import os.path
 import pymongo
-import re
 
 from cuckoo.common.config import config
 from cuckoo.common.exceptions import CuckooOperationalError
@@ -55,117 +55,139 @@ class Mongo(object):
                 self.client.drop_database(self.database)
         except TypeError as e:
             raise CuckooOperationalError(
-                "Unable to find Database %s in MongoDB: %s" %(self.database,e)
+                "Unable to find Database %s in MongoDB: %s" %
+                (self.database, e)
             )
         except pymongo.errors.PyMongoError as e:
             raise CuckooOperationalError(
                 "Unable to connect to MongoDB: %s" % e
             )
 
+    def _search_one_key(self, key, value):
+        return self.db.analysis.find({
+            key: {
+                "$regex": value,
+                "$options": "-i",
+            },
+        })
+
+    def _search_one_of(self, key, value):
+        return self.db.analysis.find({
+            key: {
+                "$elemMatch": {
+                    "$regex": value,
+                    "$options": "-i",
+                },
+            },
+        })
+
+    def _search_multiple_keys(self, value, *keys):
+        or_ = []
+        for key in keys:
+            or_.append({
+                key: {
+                    "$regex": value, "$options":
+                    "-i",
+                },
+            })
+        return self.db.analysis.find({"$or": or_})
+
     def search_filename(self, value):
-        return self.db.analysis.find({"target.file.name": {"$regex": value, "$options": "-i"}})
+        return self._search_one_key("target.file.name", value)
+
+    search_name = search_filename
 
     def search_filetype(self, value):
-        return self.db.analysis.find({"target.file.type": {"$regex": value, "$options": "-i"}})
+        return self._search_one_key("target.file.type", value)
+
+    search_type = search_filetype
 
     def search_string(self, value):
-        return self.db.analysis.find({"strings": {"$regex": value, "$options": "-i"}})
+        return self._search_one_key("strings", value)
 
     def search_ssdeep(self, value):
-        return self.db.analysis.find({"target.file.ssdeep": {"$regex": value, "$options": "-i"}})
+        return self._search_one_key("target.file.ssdeep", value)
 
     def search_crc32(self, value):
-        return self.db.analysis.find({"target.file.crc32": {"$regex": value, "$options": "-i"}})
+        return self._search_one_key("target.file.crc32", value)
 
     def search_file(self, value):
-        return self.db.analysis.find({"behavior.summary.files": {"$regex": value, "$options": "-i"}})
+        return self._search_one_key("behavior.summary.files", value)
 
     def search_key(self, value):
-        return self.db.analysis.find({"behavior.summary.keys": {"$regex": value, "$options": "-i"}})
+        return self._search_one_key("behavior.summary.keys", value)
 
     def search_mutex(self, value):
-        return self.db.analysis.find({"behavior.summary.mutex": {"$regex": value, "$options": "-i"}})
+        return self._search_one_key("behavior.summary.mutex", value)
 
     def search_domain(self, value):
-        return self.db.analysis.find({"network.domains.domain": {"$regex": value, "$options": "-i"}})
+        return self._search_one_key("network.domains.domain", value)
 
     def search_ip(self, value):
-        return self.db.analysis.find({"network.hosts": {"$regex": value, "$options": "-i"}})
+        return self._search_one_key("network.hosts", value)
 
     def search_signature(self, value):
-        return self.db.analysis.find({ "$or": [{"signatures.families": {"$regex": value, "$options": "-i"}},
-                                               {"signatures.name": {"$regex": value, "$options": "-i"}},
-                                               {"signatures.marks.call.api": {"$regex": value, "$options": "-i"}},
-                                               {"signatures.description": {"$regex": value, "$options": "-i"}}]})
+        return self._search_multiple_keys(
+            value, "signatures.families", "signatures.name",
+            "signatures.marks.call.api", "signatures.description"
+        )
+
+    search_sig = search_signature
 
     def search_url(self, value):
-        return self.db.analysis.find({ "$or": [{"target.url": {"$regex": value, "$options": "-i"}},
-                                               {"target.file.urls": {"$regex": value, "$options": "-i"}}]})
+        return self._search_multiple_keys(
+            value, "target.url", "target.file.urls"
+        )
 
     def search_imphash(self, value):
-        return self.db.analysis.find({"static.pe_imphash": {"$regex": value, "$options": "-i"}})
+        return self._search_one_key("static.pe_imphash", value)
 
     def search_md5(self, value):
-        return self.db.analysis.find({"target.file.md5": {"$regex": value, "$options": "-i"}})
+        return self._search_one_key("target.file.md5", value)
 
     def search_sha1(self, value):
-        return self.db.analysis.find({"target.file.sha1": {"$regex": value, "$options": "-i"}})
+        return self._search_one_key("target.file.sha1", value)
 
     def search_sha256(self, value):
-        return self.db.analysis.find({"target.file.sha256": {"$regex": value, "$options": "-i"}})
+        return self._search_one_key("target.file.sha256", value)
 
     def search_sha512(self, value):
-        return self.db.analysis.find({"target.file.sha512": {"$regex": value, "$options": "-i"}})
+        return self._search_one_key("target.file.sha512", value)
 
-    def search_process_args(self, value):
-        return self.db.analysis.find({"behavior.processes.command_line": {"$regex": value, "$options": "-i"}})
+    def search_args(self, value):
+        return self._search_one_key("behavior.processes.command_line", value)
+
+    search_cmdline = search_args
 
     def search_regkey_read(self, value):
-        return self.db.analysis.find({"behavior.summary.regkey_read": {"$elemMatch": {"$regex": value, "$options": "-i"}}})
-
-    def search_regkey_opened(self, value):
-        return self.db.analysis.find({"behavior.summary.regkey_opened": {"$elemMatch": {"$regex": value, "$options": "-i"}}})
+        return self._search_one_of("behavior.summary.regkey_read", value)
 
     def search_regkey_written(self, value):
-        return self.db.analysis.find({"behavior.summary.regkey_written": {"$elemMatch": {"$regex": value, "$options": "-i"}}})
+        return self._search_one_of("behavior.summary.regkey_written", value)
+
+    def search_registry(self, value):
+        return self._search_one_of(
+            value,
+            "behavior.summary.regkey_read", "behavior.summary.regkey_written"
+        )
+
+    search_reg = search_registry
 
     def search(self, term, value):
-        if not self.enabled:
-            return
+        results = getattr(self, "search_%s" % term, lambda _: None)(value)
+        for result in results or []:
+            if result["target"]["category"] == "file":
+                target = os.path.basename(result["target"]["name"])
+            elif result["target"]["category"] == "archive":
+                target = result["target"]["human"]
+            elif result["target"]["category"] == "url":
+                target = result["target"]["url"]
+            else:
+                target = None
 
-        results = []
-        search_utils = {
-            "name": [self.search_filename],
-            "type": [self.search_filetype],
-            "string": [self.search_string],
-            "ssdeep": [self.search_ssdeep],
-            "crc32": [self.search_crc32],
-            "file": [self.search_file],
-            "key": [self.search_key],
-            "mutex": [self.search_mutex],
-            "domain": [self.search_domain],
-            "ip": [self.search_ip],
-            "signature": [self.search_signature],
-            "url": [self.search_url],
-            "imphash": [self.search_imphash],
-            "args": [self.search_process_args],
-            "regkey_read": [self.search_regkey_read],
-            "regkey_opened": [self.search_regkey_opened],
-            "regkey_written": [self.search_regkey_written],
-            "registry" : [self.search_regkey_read, self.search_regkey_opened, self.search_regkey_written],
-            "hash": [self.search_md5, self.search_sha1, self.search_sha256, self.search_sha512],
-            "md5": [self.search_md5],
-            "sha1": [self.search_sha1],
-            "sha256": [self.search_sha256],
-            "sha512": [self.search_sha512],
-        }
-
-        if term in search_utils.keys():
-            for handler in search_utils[term]:
-                result = handler(value)
-                if result:
-                    results.append(result.sort([["_id", -1]]))
-
-        return results
+            yield {
+                "id": result["info"]["id"],
+                "target": target,
+            }
 
 mongo = Mongo()
