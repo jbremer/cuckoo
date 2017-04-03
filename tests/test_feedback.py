@@ -105,7 +105,7 @@ class TestFeedback(object):
         feedback.include_report_web(1)
 
         assert feedback.report.target["file"]["name"] == "binary"
-        assert feedback.report.target["file"]["size"] == 91010
+        assert feedback.report.target["file"]["size"] == 27
 
     @mock.patch("cuckoo.web.controllers.analysis.analysis.AnalysisController")
     def test_include_analysis(self, p):
