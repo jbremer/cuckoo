@@ -21,7 +21,7 @@ from django.views.decorators.http import require_safe
 from cuckoo.core.database import Database, TASK_PENDING
 from cuckoo.common.config import config
 from cuckoo.common.mongo import mongo
-from cuckoo.common.search import searcher
+from cuckoo.core.search import searcher
 from cuckoo.misc import cwd
 from cuckoo.processing import network
 from cuckoo.web.bin.utils import view_error, render_template
@@ -310,18 +310,16 @@ def _search_helper(obj, k, value):
 def search(request):
     """New Search API using combination of MongoDB and ElasticSearch as backend."""
     results = []
-    if not searcher.enabled:
-        return view_error(request, "Neither ElasticSearch nor MongoDB is enabled and "
-                                    "therefore it's not possible to do a global search.")
     if request.method == "GET":
         return render_template(request, "analysis/search.html")
 
-    if "search" in request.POST:
+    if isinstance(request.POST.get("search"), basestring):
         try:
             term, value = request.POST["search"].strip().split(":", 1)
         except ValueError:
             term = None
             value = request.POST["search"].strip()
+
         if len(value) < 3:
             return render_template(request, "analysis/search.html", **{
                 "analyses": None,

@@ -6,14 +6,14 @@ import mock
 import os
 import tempfile
 
-from cuckoo.common.search import searcher
 from cuckoo.common.elastic import Elastic
 from cuckoo.common.mongo import Mongo, mongo
 from cuckoo.common.objects import File
+from cuckoo.core.database import Database, Task
+from cuckoo.core.search import searcher
 from cuckoo.main import cuckoo_create
 from cuckoo.misc import set_cwd
 from cuckoo.reporting.mongodb import MongoDB
-from cuckoo.core.database import Database, Task
 
 report = {'target':
                   {'file':
