@@ -34,6 +34,15 @@ PRINTABLE_CHARACTERS = (
     string.letters + string.digits + string.punctuation + " \t\r\n"
 )
 
+IP_REGEX = (
+    "("
+    "(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\."
+    "(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\."
+    "(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\."
+    "(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
+    ")"
+)
+
 def convert_char(c):
     """Escapes characters.
     @param c: dirty char.
@@ -342,3 +351,13 @@ def list_of_ints(l):
 
 def list_of_strings(l):
     return list_of(l, basestring)
+
+def ishash(value, length):
+    if not isinstance(value, basestring):
+        return False
+    return bool(re.match("^([0-9a-fA-F]{%d})$" % length, value))
+
+def isipaddress(value):
+    if not isinstance(value, basestring):
+        return False
+    return bool(re.match(IP_REGEX, value))

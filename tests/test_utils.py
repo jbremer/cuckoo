@@ -391,3 +391,23 @@ def test_list_of():
     assert utils.list_of_ints([1, "1"]) is False
     assert utils.list_of_ints([1, 2]) is True
     assert utils.list_of_ints([lambda x: x]) is False
+
+def test_ishash():
+    assert utils.ishash(None, 32) is False
+    assert utils.ishash(1, 32) is False
+    assert utils.ishash({1: 2}, 32) is False
+    assert utils.ishash("1.2.3.4", 32) is False
+    assert utils.ishash("255.255.255.255", 32) is False
+    assert utils.ishash("a"*24, 32) is False
+    assert utils.ishash("a"*40, 32) is False
+    assert utils.ishash("a"*32, 32) is True
+
+def test_isipaddress():
+    assert utils.isipaddress(None) is False
+    assert utils.isipaddress(1) is False
+    assert utils.isipaddress({1: 2}) is False
+    assert utils.isipaddress("1.2.3.4") is True
+    assert utils.isipaddress("255.255.255.255") is True
+    assert utils.isipaddress("255.255.999.255") is False
+    assert utils.isipaddress("1.2.3") is False
+    assert utils.isipaddress("google.com") is False
