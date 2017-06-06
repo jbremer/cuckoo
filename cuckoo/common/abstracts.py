@@ -1254,6 +1254,10 @@ class BehaviorHandler(object):
 
     def __init__(self, behavior_analysis):
         self.analysis = behavior_analysis
+        self.init()
+
+    def init(self):
+        """Module/object initialization."""
 
     def handles_path(self, logpath):
         """Needs to return True for the log files this handler wants to

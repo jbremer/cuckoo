@@ -1,5 +1,4 @@
-# Copyright (C) 2010-2013 Claudio Guarnieri.
-# Copyright (C) 2014-2016 Cuckoo Foundation.
+# Copyright (C) 2015-2017 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -32,8 +31,9 @@ class MonitorProcessLog(list):
 
     def _api_COleScript_Compile(self, event):
         event["raw"] = "script",
-        event["arguments"]["script"] = \
+        event["arguments"]["script"] = (
             jsbeautify(event["arguments"]["script"])
+        )
 
     def _api_CWindow_AddTimeoutCode(self, event):
         event["raw"] = "code",
@@ -132,8 +132,9 @@ class MonitorProcessLog(list):
 
     def _api_pdf_eval(self, event):
         event["raw"] = "script",
-        event["arguments"]["script"] = \
+        event["arguments"]["script"] = (
             jsbeautify(event["arguments"]["script"])
+        )
 
     def _api_pdf_unescape(self, event):
         event["raw"] = "string", "unescaped"
@@ -183,7 +184,10 @@ class MonitorProcessLog(list):
             if event["type"] == "process":
                 self.first_seen = event["first_seen"]
             elif event["type"] == "apicall":
-                event["time"] = self.first_seen + datetime.timedelta(0, 0, event["time"] * 1000)
+                event["time"] = (
+                    self.first_seen +
+                    datetime.timedelta(0, 0, event["time"] * 1000)
+                )
 
                 # Remove the event type for reporting output.
                 del event["type"]
@@ -227,8 +231,7 @@ class WindowsMonitor(BehaviorHandler):
     """Parses monitor generated logs."""
     key = "processes"
 
-    def __init__(self, *args, **kwargs):
-        super(WindowsMonitor, self).__init__(*args, **kwargs)
+    def init(self):
         self.processes = []
         self.behavior = {}
         self.reboot = {}
@@ -273,8 +276,10 @@ class WindowsMonitor(BehaviorHandler):
                     # TODO Improve this where we have to calculate the "real"
                     # time again even though we already do this in
                     # MonitorProcessLog.
-                    ts = process["first_seen"] + \
+                    ts = (
+                        process["first_seen"] +
                         datetime.timedelta(0, 0, event["time"] * 1000)
+                    )
 
                     yield {
                         "type": "reboot",

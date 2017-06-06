@@ -25,8 +25,7 @@ class Summary(BehaviorHandler):
     key = "summary"
     event_types = ["generic"]
 
-    def __init__(self, *args, **kwargs):
-        super(Summary, self).__init__(*args, **kwargs)
+    def init(self):
         self.results = collections.defaultdict(set)
 
     def handle_event(self, event):
@@ -45,8 +44,7 @@ class Anomaly(BehaviorHandler):
     key = "anomaly"
     event_types = ["anomaly"]
 
-    def __init__(self, *args, **kwargs):
-        super(Anomaly, self).__init__(*args, **kwargs)
+    def init(self):
         self.anomalies = []
 
     def handle_event(self, call):
@@ -81,8 +79,7 @@ class ProcessTree(BehaviorHandler):
     key = "processtree"
     event_types = ["process"]
 
-    def __init__(self, *args, **kwargs):
-        super(ProcessTree, self).__init__(*args, **kwargs)
+    def init(self):
         self.processes = {}
 
     def handle_event(self, process):
@@ -126,8 +123,7 @@ class GenericBehavior(BehaviorHandler):
     key = "generic"
     event_types = ["process", "generic"]
 
-    def __init__(self, *args, **kwargs):
-        super(GenericBehavior, self).__init__(*args, **kwargs)
+    def init(self):
         self.processes = {}
 
     def handle_process_event(self, process):
@@ -163,8 +159,7 @@ class ApiStats(BehaviorHandler):
     key = "apistats"
     event_types = ["apicall"]
 
-    def __init__(self, *args, **kwargs):
-        super(ApiStats, self).__init__(*args, **kwargs)
+    def init(self):
         self.processes = collections.defaultdict(lambda: collections.defaultdict(lambda: 0))
 
     def handle_event(self, event):
@@ -183,8 +178,7 @@ class RebootInformation(BehaviorHandler):
 
     event_types = ["reboot"]
 
-    def __init__(self, *args, **kwargs):
-        super(RebootInformation, self).__init__(*args, **kwargs)
+    def init(self):
         self.events = []
 
     def handle_event(self, event):
@@ -201,8 +195,7 @@ class ActionInformation(BehaviorHandler):
 
     event_types = ["action"]
 
-    def __init__(self, *args, **kwargs):
-        super(ActionInformation, self).__init__(*args, **kwargs)
+    def init(self):
         self.actions = []
 
     def handle_event(self, event):
@@ -217,8 +210,7 @@ class ExtractScripts(BehaviorHandler):
     key = "extracted"
     event_types = ["process"]
 
-    def __init__(self, *args, **kwargs):
-        super(ExtractScripts, self).__init__(*args, **kwargs)
+    def init(self):
         self.scr = Scripting()
         self.ex = ExtractManager.for_task(self.analysis.task["id"])
 

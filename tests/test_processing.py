@@ -10,7 +10,7 @@ import pytest
 import shutil
 import tempfile
 
-from cuckoo.common.abstracts import Processing
+from cuckoo.common.abstracts import Processing, BehaviorHandler
 from cuckoo.common.exceptions import (
     CuckooProcessingError, CuckooOperationalError
 )
@@ -22,7 +22,7 @@ from cuckoo.core.startup import init_console_logging
 from cuckoo.main import cuckoo_create
 from cuckoo.misc import set_cwd, cwd, mkdir
 from cuckoo.processing.behavior import (
-    ProcessTree, ExtractScripts, BehaviorAnalysis
+    Summary, ProcessTree, ApiStats, ExtractScripts, BehaviorAnalysis
 )
 from cuckoo.processing.debug import Debug
 from cuckoo.processing.droidmon import Droidmon
@@ -1102,3 +1102,26 @@ def test_wsf_language():
     wsf.decode = mock.MagicMock(return_value="codehere")
     assert wsf.run() == ["codehere"]
     wsf.decode.assert_called_once()
+
+def test_behavior_handler():
+    class ProcessingModule(BehaviorHandler):
+        init = mock.MagicMock()
+
+    ProcessingModule(None).init.assert_called_with()
+
+    assert Summary(None).results == {}
+
+    as_ = ApiStats(None)
+    as_.handle_event({"pid": 1, "api": "foo"})
+    as_.handle_event({"pid": 1, "api": "foo"})
+    as_.handle_event({"pid": 1, "api": "bar"})
+    as_.handle_event({"pid": 2, "api": "baz"})
+    assert as_.run() == {
+        "1": {
+            "foo": 2,
+            "bar": 1,
+        },
+        "2": {
+            "baz": 1,
+        },
+    }
