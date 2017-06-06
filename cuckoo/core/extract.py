@@ -7,10 +7,16 @@ import os
 
 from cuckoo.common.abstracts import Extractor
 from cuckoo.common.objects import File, YaraMatch
+from cuckoo.common.scripting import SourceHolder
 from cuckoo.misc import cwd
 
 class ExtractManager(object):
     _instances = {}
+    languages = {
+        "bat": "batch",
+        "js": "javascript",
+        "ps1": "powershell",
+    }
 
     @staticmethod
     def for_task(task_id):
@@ -58,6 +64,7 @@ class ExtractManager(object):
         self.items.append({
             "category": "script",
             "program": command.program,
+            "language": self.languages.get(command.ext),
             "pid": process["pid"],
             "first_seen": process["first_seen"],
             "script": filepath,
@@ -66,6 +73,13 @@ class ExtractManager(object):
         for match in yara_matches:
             match = YaraMatch(match, "script")
             self.handle_yara(filepath, match)
+
+    def push_source(self, program, ext, source, pid=None, first_seen=None):
+        return self.push_script({
+            "language": self.languages.get(ext),
+            "pid": pid,
+            "first_seen": first_seen,
+        }, SourceHolder(program, ext, source))
 
     def push_shellcode(self, sc):
         filepath = self.write_extracted("bin", sc)

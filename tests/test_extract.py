@@ -32,8 +32,30 @@ def test_basics():
         "pid": 1,
         "first_seen": 2,
     }, cmd)
-    filepath = cwd("extracted", "0.ps1", analysis=1)
-    assert open(filepath, "rb").read() == "foobar"
+    filepath1 = cwd("extracted", "0.ps1", analysis=1)
+    assert open(filepath1, "rb").read() == "foobar"
+
+    em.push_source("javascript", "js", "thisissourcecode", 3)
+    filepath2 = cwd("extracted", "1.js", analysis=1)
+    assert open(filepath2, "rb").read() == "thisissourcecode"
+
+    assert em.results() == [{
+        "category": "script",
+        "program": "powershell",
+        "language": "powershell",
+        "pid": 1,
+        "first_seen": 2,
+        "script": filepath1,
+        "yara": [],
+    }, {
+        "category": "script",
+        "program": "javascript",
+        "language": "javascript",
+        "pid": 3,
+        "first_seen": None,
+        "script": filepath2,
+        "yara": [],
+    }]
 
 @mock.patch("cuckoo.core.extract.Extractor.__subclasses__")
 def test_ident_shellcode(p):

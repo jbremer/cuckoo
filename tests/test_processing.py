@@ -17,6 +17,7 @@ from cuckoo.common.exceptions import (
 from cuckoo.common.files import Files
 from cuckoo.common.objects import Dictionary
 from cuckoo.core.database import Database
+from cuckoo.core.extract import ExtractManager
 from cuckoo.core.plugins import RunProcessing
 from cuckoo.core.startup import init_console_logging
 from cuckoo.main import cuckoo_create
@@ -777,12 +778,12 @@ class TestBehavior(object):
         })
 
         es = ExtractScripts(ba)
-        es.handle_event({
+        es.handle_process_event({
             "command_line": "cmd.exe /c ping 1.2.3.4",
             "first_seen": 1,
             "pid": 1234,
         })
-        es.handle_event({
+        es.handle_process_event({
             "command_line": (
                 "powershell.exe -e "
                 "ZQBjAGgAbwAgACIAUgBlAGMAdQByAHMAaQB2AGUAIgA="
@@ -802,6 +803,7 @@ class TestBehavior(object):
             "first_seen": 1,
             "pid": 1234,
             "program": "cmd",
+            "language": "batch",
             "script": cwd("extracted", "0.bat", analysis=1),
             "yara": [],
         }, {
@@ -809,11 +811,47 @@ class TestBehavior(object):
             "first_seen": 2,
             "pid": 1235,
             "program": "powershell",
+            "language": "powershell",
             "script": cwd("extracted", "1.ps1", analysis=1),
             "yara": [],
         }]
         assert open(out[0]["script"], "rb").read() == "ping 1.2.3.4"
         assert open(out[1]["script"], "rb").read() == 'echo "Recursive"'
+
+    def test_extract_function(self):
+        set_cwd(tempfile.mkdtemp())
+        cuckoo_create()
+
+        mkdir(cwd(analysis=2))
+
+        ba = BehaviorAnalysis()
+        ba.set_path(cwd(analysis=2))
+        ba.set_task({
+            "id": 2,
+        })
+
+        es = ExtractScripts(ba)
+        es.handle_process_event({
+            "command_line": "ping.exe 8.8.8.8",
+            "pid": 3,
+            "first_seen": 4,
+        })
+        es.handle_apicall_event({
+            "api": "COleScript_Compile",
+            "arguments": {
+                "script": "helloworld",
+            },
+        })
+
+        assert ExtractManager.for_task(2).results() == [{
+            "category": "script",
+            "pid": 3,
+            "first_seen": 4,
+            "program": "iexplore",
+            "language": "javascript",
+            "script": cwd("extracted", "0.js", analysis=2),
+            "yara": [],
+        }]
 
 class TestPcap(object):
     @classmethod

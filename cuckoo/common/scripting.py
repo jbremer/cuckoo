@@ -170,3 +170,12 @@ class PowerShell(Scripting):
 
     def get_script(self):
         return self.args.get("command") or self.args.get("encodedcommand")
+
+class SourceHolder(object):
+    def __init__(self, program, ext, source):
+        self.program = program
+        self.ext = ext
+        self.source = source
+
+    def get_script(self):
+        return self.source

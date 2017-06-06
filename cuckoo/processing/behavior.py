@@ -208,16 +208,32 @@ class ActionInformation(BehaviorHandler):
 class ExtractScripts(BehaviorHandler):
     """Extracts embedded scripts in command-line parameters."""
     key = "extracted"
-    event_types = ["process"]
+    event_types = ["process", "apicall"]
+
+    fnextr = {
+        "COleScript_Compile": ["iexplore", "js", "script"],
+        "CWindow_AddTimeoutCode": ["iexplore", "js", "code"],
+        "pdf_eval": ["adobe", "js", "script"],
+    }
 
     def init(self):
+        self.process = None
         self.scr = Scripting()
         self.ex = ExtractManager.for_task(self.analysis.task["id"])
 
-    def handle_event(self, process):
+    def handle_process_event(self, process):
         command = self.scr.parse_command(process["command_line"])
         if command and command.get_script():
             self.ex.push_script(process, command)
+        self.process = process
+
+    def handle_apicall_event(self, apicall):
+        if apicall["api"] in self.fnextr:
+            program, ext, parameter = self.fnextr[apicall["api"]]
+            self.ex.push_source(
+                program, ext, apicall["arguments"][parameter],
+                self.process["pid"], self.process["first_seen"]
+            )
 
     def run(self):
         pass
