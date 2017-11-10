@@ -6,7 +6,7 @@ import ctypes
 import importlib
 import logging
 import multiprocessing
-import os.path
+import os
 import pkg_resources
 import subprocess
 import sys
@@ -225,3 +225,37 @@ class Structure(ctypes.Structure):
             else:
                 ret[field] = value
         return ret
+
+def get_free_disk(path):
+    """Returns the amount of free disk space in MB for the given path.
+    Support Unix and Windows"""
+    if os.path.isfile(path):
+        path = os.path.dirname(path)
+    path = path.encode("utf8")
+
+    if hasattr(os, "statvfs"):
+        stats = os.statvfs(path)
+        space = stats.f_frsize * stats.f_bavail
+        try:
+            return space / 1024 / 1024
+        except ZeroDivisionError:
+            return space
+
+    elif sys.platform == "win32":
+        from ctypes import windll
+        ull_fbytes = ctypes.c_ulonglong(0)
+
+        # If call fails, raise exception so the difference between no space
+        # and fail is known
+        if not windll.kernel32.GetDiskFreeSpaceExW(
+                ctypes.c_wchar_p(path), None, None, ctypes.pointer(ull_fbytes)
+        ):
+            raise OSError("Error determining free diskspace on Windows")
+
+        try:
+            return ull_fbytes.value / 1024 / 1024
+        except ZeroDivisionError:
+            return ull_fbytes.value
+
+    else:
+        raise OSError("Unsupported platform, cannot determine free disk space")
