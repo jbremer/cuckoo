@@ -290,7 +290,9 @@ class Task(Base):
     route = Column(String(16), nullable=True)
     sample = relationship("Sample", backref="tasks")
     submit = relationship("Submit", backref="tasks")
-    errors = relationship("Error", backref="tasks", cascade="save-update, delete")
+    errors = relationship(
+        "Error", backref="tasks", cascade="save-update, delete"
+    )
 
     def duration(self):
         if self.started_on and self.completed_on:
@@ -440,14 +442,21 @@ class Database(object):
         try:
             # TODO: this is quite ugly, should improve.
             if connection_string.startswith("sqlite"):
-                # Using "check_same_thread" to disable sqlite safety check on multiple threads.
-                self.engine = create_engine(connection_string, connect_args={"check_same_thread": False})
+                # Using "check_same_thread" to disable sqlite
+                # safety check on multiple threads.
+                self.engine = create_engine(
+                    connection_string,
+                    connect_args={"check_same_thread": False}
+                )
             elif connection_string.startswith("postgres"):
-                # Disabling SSL mode to avoid some errors using sqlalchemy and multiprocesing.
-                # See: http://www.postgresql.org/docs/9.0/static/libpq-ssl.html#LIBPQ-SSL-SSLMODE-STATEMENTS
+                # Disabling SSL mode to avoid some errors using sqlalchemy
+                # and multiprocesing.
+                # See: http://www.postgresql.org
+                # /docs/9.0/static/libpq-ssl.html#LIBPQ-SSL-SSLMODE-STATEMENTS
                 # TODO Check if this is still relevant. Especially provided the
                 # fact that we're no longer using multiprocessing.
-                self.engine = create_engine(connection_string, connect_args={"sslmode": "disable"})
+                self.engine = create_engine(
+                    connection_string, connect_args={"sslmode": "disable"})
             else:
                 self.engine = create_engine(connection_string)
         except ImportError as e:
@@ -506,8 +515,6 @@ class Database(object):
         finally:
             session.close()
 
-
-
     @classlock
     def add_machine(self, name, label, ip, platform, options, tags, interface,
                     snapshot, resultserver_ip, resultserver_port, manager):
@@ -518,7 +525,8 @@ class Database(object):
         @param platform: machine supported platform
         @param tags: list of comma separated tags
         @param interface: sniffing interface for this machine
-        @param snapshot: snapshot name to use instead of the current one, if configured
+        @param snapshot: snapshot name to use instead of the current one,
+        if configured
         @param resultserver_ip: IP address of the Result Server
         @param resultserver_port: port of the Result Server
         @param manager The machine manager used
@@ -673,9 +681,12 @@ class Database(object):
         session = self.Session()
         try:
             if locked:
-                machines = session.query(Machine).options(joinedload("tags")).filter_by(locked=True).all()
+                machines = session.query(Machine).options(
+                    joinedload("tags")
+                ).filter_by(locked=True).all()
             else:
-                machines = session.query(Machine).options(joinedload("tags")).all()
+                machines = session.query(Machine).options(
+                    joinedload("tags")).all()
             return machines
         except SQLAlchemyError as e:
             log.debug("Database error listing machines: {0}".format(e))
@@ -780,7 +791,8 @@ class Database(object):
         """
         session = self.Session()
         try:
-            machines_count = session.query(Machine).filter_by(locked=False).count()
+            machines_count = session.query(Machine).filter_by(
+                locked=False).count()
             return machines_count
         except SQLAlchemyError as e:
             log.debug("Database error counting machines: {0}".format(e))
@@ -795,10 +807,13 @@ class Database(object):
         """
         session = self.Session()
         try:
-            machines = session.query(Machine).options(joinedload("tags")).filter_by(locked=False).all()
+            machines = session.query(Machine).options(
+                joinedload("tags")
+            ).filter_by(locked=False).all()
             return machines
         except SQLAlchemyError as e:
-            log.debug("Database error getting available machines: {0}".format(e))
+            log.debug("Database error getting available"
+                      " machines: {0}".format(e))
             return []
         finally:
             session.close()
@@ -813,7 +828,8 @@ class Database(object):
         try:
             machine = session.query(Machine).filter_by(label=label).first()
         except SQLAlchemyError as e:
-            log.debug("Database error setting machine status: {0}".format(e))
+            log.debug("Database error setting machine"
+                      " status: {0}".format(e))
             session.close()
             return
 
@@ -824,7 +840,8 @@ class Database(object):
                 session.commit()
                 session.refresh(machine)
             except SQLAlchemyError as e:
-                log.debug("Database error setting machine status: {0}".format(e))
+                log.debug("Database error setting machine"
+                          " status: {0}".format(e))
                 session.rollback()
             finally:
                 session.close()
@@ -858,10 +875,14 @@ class Database(object):
             return None
 
         sample = Sample(
-            md5=file_obj.get_md5(), crc32=file_obj.get_crc32(),
-            sha1=file_obj.get_sha1(), sha256=file_obj.get_sha256(),
-            sha512=file_obj.get_sha512(), file_size=file_obj.get_size(),
-            file_type=file_obj.get_type(), ssdeep=file_obj.get_ssdeep()
+            md5=file_obj.get_md5(),
+            crc32=file_obj.get_crc32(),
+            sha1=file_obj.get_sha1(),
+            sha256=file_obj.get_sha256(),
+            sha512=file_obj.get_sha512(),
+            file_size=file_obj.get_size(),
+            file_type=file_obj.get_type(),
+            ssdeep=file_obj.get_ssdeep()
         )
 
         # Search if a sample with this file's sha256 hash already exists
@@ -1032,10 +1053,13 @@ class Database(object):
         """
         session = self.Session()
         try:
-            _min = session.query(func.min(Task.started_on).label("min")).first()
-            _max = session.query(func.max(Task.completed_on).label("max")).first()
+            _min = session.query(func.min(Task.started_on).label(
+                "min")).first()
+            _max = session.query(func.max(Task.completed_on).label(
+                "max")).first()
 
-            if not isinstance(_min, DateTime) or not isinstance(_max, DateTime):
+            if not isinstance(_min, DateTime) or \
+                    not isinstance(_max, DateTime):
                 return
 
             return int(_min[0].strftime("%s")), int(_max[0].strftime("%s"))
@@ -1054,7 +1078,8 @@ class Database(object):
         session = self.Session()
         try:
             if status:
-                tasks_count = session.query(Task).filter_by(status=status).count()
+                tasks_count = session.query(Task).filter_by(
+                    status=status).count()
             else:
                 tasks_count = session.query(Task).count()
             return tasks_count
@@ -1195,7 +1220,9 @@ class Database(object):
         """
         session = self.Session()
         try:
-            machine = session.query(Machine).options(joinedload("tags")).filter_by(name=name).first()
+            machine = session.query(Machine).options(
+                joinedload("tags")
+            ).filter_by(name=name).first()
         except SQLAlchemyError as e:
             log.debug("Database error viewing machine: {0}".format(e))
             return None
@@ -1214,7 +1241,9 @@ class Database(object):
         """
         session = self.Session()
         try:
-            machine = session.query(Machine).options(joinedload("tags")).filter_by(label=label).first()
+            machine = session.query(Machine).options(
+                joinedload("tags")
+            ).filter_by(label=label).first()
         except SQLAlchemyError as e:
             log.debug("Database error viewing machine by label: {0}".format(e))
             return None
