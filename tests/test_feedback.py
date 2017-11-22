@@ -6,6 +6,7 @@ import mock
 import os
 import pytest
 import responses
+import shutil
 import tempfile
 import zipfile
 
@@ -107,16 +108,14 @@ class TestFeedback(object):
         assert feedback.report.target["file"]["name"] == "binary"
         assert feedback.report.target["file"]["size"] == 91010
 
-    @mock.patch("cuckoo.web.controllers.analysis.analysis.AnalysisController")
-    def test_include_analysis(self, p):
-        p._get_report.return_value = self.report(
-            "tests/files/sample_analysis_storage"
-        )
+    def test_include_analysis_files(self):
+        set_cwd(tempfile.mkdtemp())
+        fake_task = cwd("storage", "analyses", "1")
+        shutil.copytree("tests/files/sample_analysis_storage", fake_task)
 
-        feedback = CuckooFeedbackObject()
-        feedback.include_report_web(1)
-        feedback.include_analysis(memdump=False)
-        assert len(feedback.to_files()) == 1
+        feedback = CuckooFeedbackObject(task_id=1, include_files=True)
+        assert len(feedback.get_files()["file"].getvalue()) == 71487
+        shutil.rmtree(fake_task)
 
     def test_append_error(self):
         feedback = CuckooFeedbackObject(message="test")
@@ -126,9 +125,14 @@ class TestFeedback(object):
         assert obj["message"] == "test"
         assert obj["errors"] == ["test"]
 
+    @mock.patch("cuckoo.core.feedback.Config")
     @mock.patch("cuckoo.web.controllers.analysis.analysis.AnalysisController")
     @mock.patch("cuckoo.core.feedback.requests")
-    def test_send_data(self, p, q):
+    def test_send_data(self, p, q, c):
+        set_cwd(tempfile.mkdtemp())
+        fake_task = cwd("storage", "analyses", "1")
+        shutil.copytree("tests/files/sample_analysis_storage", fake_task)
+
         q._get_report.return_value = self.report(
             "tests/files/sample_analysis_storage"
         )
@@ -137,12 +141,14 @@ class TestFeedback(object):
             "status": True, "feedback_id": 1,
         }
 
+        c.from_confdir.return_value = {}
+
         feedback = CuckooFeedback()
         cf = CuckooFeedbackObject(
-            "message", "email@google.com", "name", "company", True
+            "message", "email@google.com", "name", "company", True,
+            include_files=True, task_id=1
         )
         cf.include_report_web(1)
-        cf.include_analysis()
         assert feedback.send_feedback(cf) == 1
 
         p.post.assert_called_once_with(
@@ -159,8 +165,10 @@ class TestFeedback(object):
         # Ensure that the second entry for each file is an open file handle.
         files = p.post.call_args[1]["files"]
         z = zipfile.ZipFile(files["file"])
+
         assert "Starting analyzer" in z.read("analysis.log")
         assert len(z.read("cuckoo.log")) == 15274
+        shutil.rmtree(fake_task)
 
     @mock.patch("cuckoo.web.controllers.analysis.analysis.AnalysisController")
     @mock.patch("cuckoo.core.feedback.CuckooFeedbackObject")
