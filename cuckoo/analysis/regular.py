@@ -4,16 +4,17 @@
 
 import logging
 import os
-import time
 import threading
+import time
 
 from cuckoo.common.abstracts import AnalysisManager
 from cuckoo.common.constants import faq
-from cuckoo.common.objects import File, Analysis
+
 from cuckoo.common.exceptions import (
     CuckooMachineSnapshotError, CuckooMachineError, CuckooGuestError,
     CuckooGuestCriticalTimeout
 )
+from cuckoo.common.objects import File, Analysis
 from cuckoo.core.database import (
     TASK_COMPLETED, TASK_REPORTED, TASK_FAILED_ANALYSIS, TASK_FAILED_PROCESSING
 )
@@ -25,12 +26,12 @@ from cuckoo.core.scheduler import Scheduler
 
 log = logging.getLogger(__name__)
 
-class TaskAnalysis(AnalysisManager):
+class Regular(AnalysisManager):
 
     supports = ["file", "url", "archive", "baseline", "service"]
 
     def init(self, db):
-        """Excuted by the scheduler. Prepares the analysis for starting"""
+        """Executed by the scheduler. Prepares the analysis for starting."""
         init_success = True
 
         # Used to keep track about the Scheduler machine_lock
@@ -54,18 +55,18 @@ class TaskAnalysis(AnalysisManager):
                 log.debug("Created missing task directories for task #%s",
                           self.task.id)
 
-        if self.task.file:
-            self.file = File(self.task.target)
+        if self.task.is_file:
+            self.f = File(self.task.target)
 
             # Get filename here so we can use it to name the copy
             # in case the original is not available
-            file_name = self.file.get_name()
+            file_name = self.f.get_name()
             use_copy = False
             if not os.path.exists(self.task.target):
                 log.warning("Original binary %s does not exist anymore."
                             " Using copy", self.task.target)
                 use_copy = True
-                self.file = File(self.task.copied_binary)
+                self.f = File(self.task.copied_binary)
 
             # Verify if the file is readable and has not changed
             if not self.file_usable():
@@ -73,7 +74,7 @@ class TaskAnalysis(AnalysisManager):
 
             else:
                 options = {}
-                package, activity = self.file.get_apk_entry()
+                package, activity = self.f.get_apk_entry()
                 if package and activity:
                     options["apk_entry"] = "%s:%s" % (package, activity)
 
@@ -81,8 +82,8 @@ class TaskAnalysis(AnalysisManager):
                     "target": self.task.copied_binary if use_copy
                     else self.task.target,
                     "file_name": file_name,
-                    "file_type": self.file.get_type(),
-                    "pe_exports": ",".join(self.file.get_exported_functions()),
+                    "file_type": self.f.get_type(),
+                    "pe_exports": ",".join(self.f.get_exported_functions()),
                     "options": options
                 })
 
@@ -102,7 +103,7 @@ class TaskAnalysis(AnalysisManager):
         return init_success
 
     def run(self):
-        """Starts the analysis manager thread"""
+        """Starts the analysis manager thread."""
         try:
             task_log_start(self.task.id)
             analysis_success = False
@@ -170,13 +171,13 @@ class TaskAnalysis(AnalysisManager):
     def start_analysis(self):
         """Start the analysis by running the auxiliary modules,
         adding the task to the resultserver, starting the machine
-        and running a guest manager"""
+        and running a guest manager."""
         # Set guest status to starting and start analysis machine
         self.set_analysis_status(Analysis.STARTING)
 
         target = self.task.target
-        if self.task.file:
-            target = self.file.get_name()
+        if self.task.is_file:
+            target = self.f.get_name()
 
         log.info("Starting analysis of %s \"%s\" (task #%d, options: \"%s\")",
                  self.task.category.upper(), target, self.task.id,
@@ -282,7 +283,7 @@ class TaskAnalysis(AnalysisManager):
     def stop_analysis(self):
         """Stop the analysis by stopping the aux modules, optionally
         dumping VM memory, stopping the VM and deleting the task from
-        the resultserver"""
+        the resultserver."""
         self.set_analysis_status(Analysis.STOPPING)
 
         # Stop all Auxiliary modules
@@ -383,7 +384,7 @@ class TaskAnalysis(AnalysisManager):
 
     def on_status_starting(self, db):
         """Is executed by the scheduler on analysis status starting
-        Stores the chosen route in the db"""
+        Stores the chosen route in the db."""
         log.info("Using route \'%s\' for task #%s", self.route,
                      self.task.id)
         # Propagate the taken route to the database.
@@ -395,7 +396,7 @@ class TaskAnalysis(AnalysisManager):
     def on_status_stopped(self, db):
         """Is executed by the scheduler on analysis status stopped
         Sets the task to completed, writes task json to analysis folder
-        and releases machine if it is locked"""
+        and releases machine if it is locked."""
         log.debug("Setting task #%s status to %s", self.task.id,
                   TASK_COMPLETED)
         db.set_status(self.task.id, TASK_COMPLETED)
@@ -412,7 +413,7 @@ class TaskAnalysis(AnalysisManager):
     def on_status_failed(self, db):
         """Is executed by the scheduler on analysis status failed.
         Releases the locked machine if it is locked and updates task status
-        to analysis failed"""
+        to analysis failed."""
         db.set_status(self.task.id, TASK_FAILED_ANALYSIS)
 
         if self.machine.locked:
@@ -422,7 +423,7 @@ class TaskAnalysis(AnalysisManager):
     def finalize(self, db):
         """Executed by the scheduler when the analysis manager thread exists.
         Updates the task status to the correct one and updates the
-        task.json"""
+        task.json."""
         # If, at this point, the analysis is not stopped or failed. It cannot
         # succeeded, since the manager thread already exited. Set status to
         # failed to prevent running tasks that are not running
@@ -449,7 +450,7 @@ class TaskAnalysis(AnalysisManager):
 
     def release_scheduler_lock(self):
         """Release the scheduler machine_lock. Do this when the VM has
-        started"""
+        started."""
         if not self.scheduler_lock_released:
             try:
                 Scheduler.machine_lock.release()
