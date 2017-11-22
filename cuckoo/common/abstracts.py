@@ -12,7 +12,7 @@ import threading
 
 import xml.etree.ElementTree as ET
 
-from cuckoo.common.config import config, Config, emit_options
+from cuckoo.common.config import config, emit_options
 from cuckoo.common.exceptions import CuckooCriticalError
 from cuckoo.common.exceptions import CuckooDependencyError
 from cuckoo.common.exceptions import CuckooMachineError
@@ -1335,7 +1335,6 @@ class AnalysisManager(threading.Thread):
         self.machinery = machinery
         self.analysis = None
         self.options = {}
-        self.cfg = Config()
         self.action_lock = threading.Lock()
         self.guest_manager = None
         self.aux = None
@@ -1390,10 +1389,10 @@ class AnalysisManager(threading.Thread):
             "id": self.task.id,
             "package": self.task.package,
             "target": self.task.target,
-            "terminate_processes": self.cfg.cuckoo.terminate_processes,
+            "terminate_processes": config("cuckoo:cuckoo:terminate_processes"),
             "ip": self.machine.resultserver_ip,
             "port": self.machine.resultserver_port,
-            "timeout": self.cfg.timeouts.default
+            "timeout": config("cuckoo:timeouts:default")
         }
 
         if self.task.timeout:

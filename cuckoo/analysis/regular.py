@@ -8,6 +8,7 @@ import threading
 import time
 
 from cuckoo.common.abstracts import AnalysisManager
+from cuckoo.common.config import config
 from cuckoo.common.constants import faq
 
 from cuckoo.common.exceptions import (
@@ -127,7 +128,7 @@ class Regular(AnalysisManager):
                 self.set_analysis_status(Analysis.STOPPED,
                                          request_scheduler_action=True)
 
-                if self.cfg.cuckoo.process_results:
+                if config("cuckoo:cuckoo:process_results"):
                     logger(
                         "Starting task reporting",
                         action="task.report", status="pending"
@@ -291,7 +292,7 @@ class Regular(AnalysisManager):
 
         # If enabled, make a full memory dump of the machine
         # before it shuts down
-        if self.cfg.cuckoo.memory_dump or self.task.memory:
+        if config("cuckoo:cuckoo:memory_dump") or self.task.memory:
 
             # Json log for performance measurement purposes
             logger(
@@ -437,7 +438,7 @@ class Regular(AnalysisManager):
         self.task.set_task(db_task)
         self.task.write_to_disk()
 
-        if self.cfg.cuckoo.process_results and \
+        if config("cuckoo:cuckoo:process_results") and \
                         self.processing_success is not None:
             if self.processing_success:
                 log.debug("Setting task #%s status to %s", self.task.id,
