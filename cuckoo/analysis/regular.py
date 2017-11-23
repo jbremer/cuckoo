@@ -454,7 +454,7 @@ class Regular(AnalysisManager):
         started."""
         if not self.scheduler_lock_released:
             try:
-                Scheduler.machine_lock.release()
+                self.machine_lock.release()
                 self.scheduler_lock_released = True
             except threading.ThreadError:
                 pass
