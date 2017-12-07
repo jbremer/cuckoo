@@ -727,8 +727,9 @@ class Database(object):
             # Check if there are any machines that satisfy the
             # selection requirements.
             if not machines.count():
-                raise CuckooOperationalError("No machines match selection"
-                                             " criteria.")
+                raise CuckooOperationalError(
+                    "No machines match selection criteria."
+                )
 
             # Get the first free machine.
             machine = machines.filter_by(locked=False).first()
@@ -744,8 +745,9 @@ class Database(object):
                 session.commit()
                 session.refresh(machine)
             except SQLAlchemyError as e:
-                log.debug("Database error updating machine: {0}"
-                          " to locked".format(e))
+                log.debug(
+                    "Database error updating machine: %s to locked", e
+                )
                 session.rollback()
                 return None
             finally:
