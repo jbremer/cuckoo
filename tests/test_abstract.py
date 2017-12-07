@@ -18,7 +18,7 @@ from cuckoo.core.task import Task
 from cuckoo.main import cuckoo_create
 from cuckoo.misc import set_cwd
 
-class TestProcessing:
+class TestProcessing(object):
     def setup(self):
         self.p = abstracts.Processing()
 
@@ -26,7 +26,7 @@ class TestProcessing:
         with pytest.raises(NotImplementedError):
             self.p.run()
 
-class TestReport:
+class TestReport(object):
     def setup(self):
         self.r = abstracts.Report()
 
@@ -63,7 +63,7 @@ class FakeMachine(object):
         self.manager = "virtualbox"
         self.locked = True
 
-class TestAnalysisManager:
+class TestAnalysisManager(object):
     def setup_class(self):
         self.cwd = tempfile.mkdtemp()
         set_cwd(self.cwd)
