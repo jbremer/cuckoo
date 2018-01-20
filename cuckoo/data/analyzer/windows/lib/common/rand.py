@@ -12,3 +12,7 @@ def random_integer(digits):
     start = 10 ** (digits - 1)
     end = (10 ** digits) - 1
     return random.randint(start, end)
+
+def chance(percentage):
+    return random.randint(1, 100) < percentage
+

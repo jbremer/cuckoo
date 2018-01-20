@@ -199,3 +199,54 @@ class Auxiliary(object):
 
     def stop(self):
         pass
+
+
+class Action(object):
+    """Class uses by the Human module to implement action
+    that need to be performed to simulate human behavior
+
+    Two types of actions can be create. alwaysrun True and False.
+    False is for 'large' actions that are only performed when a specific
+    schedule is chosen. True is always performed if the Human module is
+    enabled (unless specific action is disabled)
+    """
+
+    # Used to display name and see if any options were given for this module
+    # EG: human.modulename=0
+    name = ""
+    alwaysrun = False
+
+    def __init__(self):
+        self.active = False
+        self.initialized = False
+        self.options = {}
+        self.config = None
+        self.runs = 0
+        self.software = None
+
+    def is_enabled(self):
+        return int(self.options.get("human.%s" % self.name, 1))
+
+    def set_options(self, options):
+        """Used to set the options given to the Human module"""
+        self.options = options
+
+    def set_config(self, data):
+        """Used to pass any data in the 'data' json field specific for a large
+        action in the schedule json file."""
+        self.config = data
+
+    def calculate_runs(self, duration):
+        """The amount of seconds the module should run is passed.
+        Used to calculate how long each 'run' of an action should last"""
+        pass
+
+    def init(self):
+        pass
+
+    def run(self):
+        """Called the amount of times of self.run."""
+        pass
+
+    def action_end(self):
+        pass
