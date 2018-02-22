@@ -200,6 +200,24 @@ class DatabaseEngine(object):
         p.from_file.return_value = ""
         assert self.d.add_path(Files.temp_put(os.urandom(16))) is not None
 
+    def test_add_macrorecord(self):
+        fd, zip_path = tempfile.mkstemp()
+        os.write(fd, os.urandom(64))
+        os.close(fd)
+        task_id = self.d.add_macrorecord(
+            zip_path, name="macro1", machine="cuckoo1"
+        )
+        task = self.d.view_task(task_id)
+        assert task.id == task_id
+        assert task.options["free"] == "1"
+        assert task.options["human"] == "0"
+        assert task.options["screenshots"] == "0"
+        assert task.options["macrorecord.name"] == "macro1"
+        assert task.package == "recordmacro"
+        assert task.category == "file"
+        assert task.timeout == 3600
+        assert task.machine == "cuckoo1"
+
 class TestConnectOnce(object):
     def setup(self):
         set_cwd(tempfile.mkdtemp())

@@ -30,6 +30,7 @@ from cuckoo.processing.behavior import (
 from cuckoo.processing.debug import Debug
 from cuckoo.processing.droidmon import Droidmon
 from cuckoo.processing.extracted import Extracted
+from cuckoo.processing.macro import Macro
 from cuckoo.processing.memory import Memory, VolatilityManager, s as obj_s
 from cuckoo.processing.network import Pcap, Pcap2, NetworkAnalysis, sort_pcap
 from cuckoo.processing.platform.windows import RebootReconstructor
@@ -40,6 +41,7 @@ from cuckoo.processing.strings import Strings
 from cuckoo.processing.suricata import Suricata
 from cuckoo.processing.targetinfo import TargetInfo
 from cuckoo.processing.virustotal import VirusTotal
+
 
 try:
     from cuckoo.processing.memory import obj as vol_obj, exc as vol_exc
@@ -622,6 +624,34 @@ class TestProcessing(object):
             })
             v.run()
         e.match("Unsupported task category")
+
+    def test_macro_move(self):
+        set_cwd(tempfile.mkdtemp())
+        cuckoo_create()
+        analysis_path = cwd(analysis=1)
+        macro_dir = cwd("macros", analysis=1)
+        mkdir(analysis_path)
+        mkdir(macro_dir)
+        for create in ["doge.exe", "macro.exe", "savefile.notexe"]:
+            with open(os.path.join(macro_dir, create), "wb") as fp:
+                fp.write(os.urandom(128))
+
+        m = Macro()
+        m.set_task({
+            "package": "recordmacro",
+            "options": {
+                "macrorecord.name": "doge"
+            }
+        })
+        m.set_path(analysis_path)
+        results = m.run()
+
+        dirlist = os.listdir(cwd("storage", "macros"))
+        assert len(results["recordings"]) == 2
+        assert results["record_name"] == "doge"
+        assert "doge.exe" in dirlist
+        assert "macro.exe" in dirlist
+        assert "savefile.notexe" not in dirlist
 
 @pytest.mark.skipif(not HAVE_VOLATILITY, reason="No Volatility installed")
 class TestVolatility(object):

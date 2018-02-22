@@ -748,6 +748,15 @@ class TestMigrateCWD(object):
         os.symlink(cwd("monitor", monitor), cwd("monitor", "latest"))
         migrate_cwd()
 
+    def test_new_directory_macro(self):
+        set_cwd(tempfile.mkdtemp())
+        cuckoo_create()
+        shutil.rmtree(cwd("macro"))
+        shutil.rmtree(cwd("storage", "macros"))
+        migrate_cwd()
+        assert os.path.exists(cwd("macro"))
+        assert os.path.exists(cwd("storage", "macros"))
+
 class TestCommunitySuggestion(object):
     @property
     def ctx(self):
