@@ -630,6 +630,9 @@ class Config(object):
                 "force": Boolean(False),
                 "url": String(),
             },
+            "macro": {
+                "enabled": Boolean(True)
+            }
         },
         "qemu": {
             "qemu": {
