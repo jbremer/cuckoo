@@ -765,7 +765,7 @@ def suricata_rules():
     suricata_rules_url = "{0}/emerging.rules.tar.gz".format(suricata_url)
     suricata_hash_url = "{0}/emerging.rules.tar.gz.md5".format(suricata_url)
 
-    directory = cwd() + "/stuff/suricata/"
+    directory = cwd("/stuff/suricata/")
     if not os.path.exists(directory):
         os.makedirs(directory)
 
