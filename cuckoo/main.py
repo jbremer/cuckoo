@@ -2,6 +2,10 @@
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
+from hashlib import md5
+import requests
+import tarfile
+from io import BytesIO
 import click
 import jinja2
 import logging
@@ -739,3 +743,41 @@ def dist_migrate():
         exit(1)
 
     print yellow(">>> Your database migration was successful!")
+
+
+def hash_file(file_object, hasher, block_size=65536):
+    """Returns a hash digest of choice for a given file object."""
+    buf = file_object.read(block_size)
+    while len(buf) > 0:
+        hasher.update(buf)
+        buf = file_object.read(block_size)
+    return hasher.hexdigest()
+
+
+@main.command()
+def suricata_rules():
+    """Downloads the latest rule set for suricata from emergingthreats.net
+    """
+    suricata_url = "https://rules.emergingthreats.net/open/suricata"
+    suricata_rules_url = "{0}/emerging.rules.tar.gz".format(suricata_url)
+    suricata_hash_url = "{0}/emerging.rules.tar.gz.md5".format(suricata_url)
+
+    directory = cwd() + "/stuff/suricata/"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    print yellow("Downloading suricata rules...")
+    remote_hash = requests.get(suricata_hash_url).text.strip()
+    req_rules = BytesIO(requests.get(suricata_rules_url).content)
+
+    print yellow("Checking hash...")
+    rules_hash = hash_file(req_rules, md5())
+    if rules_hash != remote_hash:
+        print red("The rules archive did not match its hash")
+        return
+
+    req_rules.seek(0)
+    rules = tarfile.open(fileobj=req_rules, mode="r:gz")
+    print yellow("Extracting rules to $CWD/stuff/suricata/rules...")
+    rules.extractall(directory)
+    rules.close()
