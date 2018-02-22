@@ -1,4 +1,4 @@
-# Copyright (C) 2016-2017 Cuckoo Foundation.
+# Copyright (C) 2016-2018 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -7,29 +7,21 @@ import os
 
 from cuckoo.common.config import Config
 from cuckoo.common.exceptions import CuckooConfigurationError
-from cuckoo.misc import cwd
-from cuckoo.misc import (
-    mkdir
-)
+from cuckoo.misc import cwd, mkdir
 
 def write_suricata_conf():
-    """Writes suricata.yaml configuration file if it does not exist yet."""
-    directory = cwd("stuff/suricata/")
-    if not os.path.exists(directory):
-            mkdir(directory)
-
-    if os.path.exists(directory, "suricata.yaml"):
+    """Writes the suricata.yaml configuration file if it does not exist yet."""
+    if os.path.exists(cwd("stuff", "suricata.yaml")):
         return
 
     template = jinja2.Environment().from_string(
         open(cwd("cwd", "suricata.jinja2", private=True), "rb").read()
     )
 
-    with open(cwd(directory, "suricata.yaml"), "wb") as f:
+    with open(cwd("stuff", "suricata.yaml"), "wb") as f:
         f.write(template.render({
-            "cwd": cwd,
+            "dirpath": cwd("suricata"),
         }).rstrip().encode("utf8") + "\n")
-
 
 def write_supervisor_conf(username):
     """Writes supervisord.conf configuration file if it does not exist yet."""

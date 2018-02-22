@@ -1,4 +1,4 @@
-# Copyright (C) 2015-2017 Cuckoo Foundation.
+# Copyright (C) 2015-2018 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -12,6 +12,7 @@ import time
 from cuckoo.common.abstracts import Processing
 from cuckoo.common.exceptions import CuckooProcessingError
 from cuckoo.common.files import Files
+from cuckoo.misc import cwd
 
 try:
     import suricatasc
@@ -260,7 +261,9 @@ class Suricata(Processing):
         }
 
         self.suricata = self.options.get("suricata", "/usr/bin/suricata")
-        self.config_path = self.options.get("conf", "/etc/suricata/suricata.yaml")
+        self.config_path = (
+            self.options.get("conf") or cwd("stuff", "suricata.yaml")
+        )
         self.eve_log = self.options.get("eve_log", "eve.json")
         self.files_log = self.options.get("files_log", "files-json.log")
         self.files_dir = self.options.get("files_dir", "files")

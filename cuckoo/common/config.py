@@ -1,5 +1,5 @@
 # Copyright (C) 2012-2013 Claudio Guarnieri.
-# Copyright (C) 2014-2017 Cuckoo Foundation.
+# Copyright (C) 2014-2018 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -594,8 +594,8 @@ class Config(object):
                     exists=True, writable=False, readable=True
                 ),
                 "conf": Path(
-                    "/etc/suricata/suricata.yaml",
-                    exists=True, writable=False, readable=True
+                    exists=True, writable=False, readable=True,
+                    allow_empty=True
                 ),
                 "eve_log": Path(
                     "eve.json",
