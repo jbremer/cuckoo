@@ -18,6 +18,7 @@ import time
 
 from cuckoo.common.colors import bold, red, yellow
 from cuckoo.common.config import config, emit_options, Config
+from cuckoo.common.constants import MACRO_URL
 from cuckoo.common.elastic import elastic
 from cuckoo.common.exceptions import (
     CuckooOperationalError, CuckooDatabaseError, CuckooDependencyError
@@ -117,7 +118,7 @@ def enumerate_files(path, pattern):
 def submit_tasks(target, options, package, custom, owner, timeout, priority,
                  machine, platform, memory, enforce_timeout, clock, tags,
                  remote, pattern, maxcount, is_unique, is_url, is_baseline,
-                 is_shuffle):
+                 is_shuffle, record_macro):
     db = Database()
 
     data = dict(
@@ -135,6 +136,37 @@ def submit_tasks(target, options, package, custom, owner, timeout, priority,
         clock=clock,
         unique="1" if is_unique else "0",
     )
+
+    if record_macro:
+        if not machine:
+            print "Please select a machine on which to record the macro"
+            return
+
+        recorder = cwd("macro", "recorder.zip")
+        if not os.path.exists(os.path.join(recorder)):
+            log.debug("Downloading macro software")
+            r = requests.get(MACRO_URL)
+
+            if r.status_code != 200:
+                log.error("Failed to download macro software")
+                return
+
+            with open(recorder, "wb") as fp:
+                fp.write(r.content)
+
+        # Check if the name is not already used for an existing macro
+        record_macro = record_macro.replace(" ", "")
+        recordings = [
+            m.split(".", 1)[0] for m in os.listdir(cwd("storage", "macros"))
+        ]
+
+        if record_macro in recordings:
+            print "Macro '%s' exists in storage/macros" % record_macro
+            return
+
+        task_id = db.add_macrorecord(recorder, record_macro, machine, owner)
+        yield "Macro recording: '%s'" % record_macro, machine, task_id
+        return
 
     if is_baseline:
         if remote:
@@ -487,6 +519,8 @@ def migrate_cwd():
     # Create new directories if not present yet.
     mkdir(cwd("stuff"))
     mkdir(cwd("yara", "office"))
+    mkdir(cwd("macro"))
+    mkdir(cwd("storage", "macros"))
 
     # Create the new $CWD/whitelist/ directory.
     if not os.path.exists(cwd("whitelist")):

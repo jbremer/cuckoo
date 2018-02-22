@@ -1104,6 +1104,28 @@ class Database(object):
                         custom, owner, machine, platform, tags, memory,
                         enforce_timeout, clock, "file", submit_id)
 
+    def add_macrorecord(self, zip_path, name=None, machine=None, owner=None):
+        """Add new macro recording task
+        @param zip_path: path to the zip containing the macro software
+        @param name: name for the recording
+        @param machine: machine to create the recording on
+        @param owner: task owner
+        """
+        options = {
+            "free": 1,
+            "human": 0,
+            "screenshots": 0
+        }
+
+        if name:
+            options["macrorecord.name"] = name
+
+        return self.add(
+            File(zip_path), timeout=3600, package="recordmacro", owner=owner,
+            options=emit_options(options), priority=999, machine=machine,
+            category="file", enforce_timeout=False
+        )
+
     def add_archive(self, file_path, filename, package, timeout=0,
                     options=None, priority=1, custom="", owner="", machine="",
                     platform="", tags=None, memory=False,
