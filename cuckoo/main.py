@@ -28,7 +28,7 @@ from cuckoo.common.colors import yellow, red, green, bold
 from cuckoo.common.logo import logo
 from cuckoo.common.utils import exception_message
 from cuckoo.core.database import Database
-from cuckoo.core.init import write_supervisor_conf, write_cuckoo_conf
+from cuckoo.core.init import write_supervisor_conf, write_cuckoo_conf, write_suricata_conf
 from cuckoo.core.resultserver import ResultServer
 from cuckoo.core.scheduler import Scheduler
 from cuckoo.core.startup import (
@@ -86,6 +86,9 @@ def cuckoo_create(username=None, cfg=None, quiet=False):
     # Write the supervisord.conf configuration file.
     write_supervisor_conf(username or getuser())
     write_cuckoo_conf(cfg=cfg)
+
+    # Write suricata.yaml configuration file.
+    write_suricata_conf()
 
     if not quiet:
         print
