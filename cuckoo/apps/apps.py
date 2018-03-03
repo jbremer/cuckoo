@@ -528,6 +528,12 @@ def migrate_cwd():
             cwd("..", "data", "whitelist", private=True), cwd("whitelist")
         )
 
+    # Create the new $CWD/human directory.
+    if not os.path.exists(cwd("human")):
+        shutil.copytree(
+            cwd("..", "data", "human", private=True), cwd("human")
+        )
+
     hashes = {}
     for line in open(cwd("cwd", "hashes.txt", private=True), "rb"):
         if not line.strip() or line.startswith("#"):
