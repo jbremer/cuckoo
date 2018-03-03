@@ -215,6 +215,7 @@ class Action(object):
     # EG: human.modulename=0
     name = ""
     alwaysrun = False
+    multi_instance = False
 
     def __init__(self):
         self.active = False
@@ -223,9 +224,12 @@ class Action(object):
         self.config = None
         self.runs = 0
         self.software = None
+        self.schedule_count = 0
+        self.delay = 0
 
-    def is_enabled(self):
-        return int(self.options.get("human.%s" % self.name, 1))
+    @classmethod
+    def is_enabled(cls, options):
+        return int(options.get("human.%s" % cls.name, 1))
 
     def set_options(self, options):
         """Used to set the options given to the Human module"""
@@ -235,6 +239,12 @@ class Action(object):
         """Used to pass any data in the 'data' json field specific for a large
         action in the schedule json file."""
         self.config = data
+
+    def get_option(self, name):
+        """Retrieves options 'name' for this specific action
+        @param name: Name of option to retrieve."""
+        name = "human.%s.%s" % (self.name, name)
+        return self.options.get(name)
 
     def calculate_runs(self, duration):
         """The amount of seconds the module should run is passed.
