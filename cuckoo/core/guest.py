@@ -66,10 +66,18 @@ def analyzer_zipfile(platform, monitor):
             monitor = os.path.basename(open(dirpath, "rb").read().strip())
             dirpath = cwd("monitor", monitor)
 
-        for name in os.listdir(dirpath):
-            zip_file.write(
-                os.path.join(dirpath, name), os.path.join("bin", name)
-            )
+        # Upload files from the following dirs to the paths on the machine
+        uploaddirs = [
+            (dirpath, "bin"), (cwd("human"), "files"),
+            (cwd("storage", "macros"), "files")
+        ]
+
+        for upload in uploaddirs:
+            for name in os.listdir(upload[0]):
+                zip_file.write(
+                    os.path.join(upload[0], name),
+                    os.path.join(upload[1], name)
+                )
 
         # Dump compiled "dumpmem" Yara rules for zer0m0n usage.
         zip_file.write(cwd("stuff", "dumpmem.yarac"), "bin/rules.yarac")
