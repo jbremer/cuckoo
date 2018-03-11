@@ -5,10 +5,10 @@
 import logging
 import os
 import re
-import threading
-import time
 import shutil
 import socket
+import threading
+import time
 import zipfile
 
 from lib.common.abstracts import Auxiliary
@@ -19,7 +19,6 @@ from lib.common.results import upload_to_host
 log = logging.getLogger(__name__)
 
 class RecordMacro(threading.Thread, Auxiliary):
-
     def __init__(self, options={}, analyzer=None):
         threading.Thread.__init__(self)
         Auxiliary.__init__(self, options, analyzer)
@@ -65,8 +64,8 @@ class RecordMacro(threading.Thread, Auxiliary):
             os.makedirs(self.uploaded)
         except (WindowsError, OSError) as e:
             raise CuckooError(
-                "Failed to create upload or store dir at '%s'."
-                " %s" % (self.upload, e)
+                "Failed to create upload or store dir at '%s': %s" %
+                (self.upload, e)
             )
 
         # Set the default save dir to the dir that will be uploaded

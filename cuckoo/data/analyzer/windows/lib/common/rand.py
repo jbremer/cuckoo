@@ -1,3 +1,7 @@
+# Copyright (C) 2012-2018 Cuckoo Foundation.
+# This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
+# See the file 'docs/LICENSE' for copying permission.
+
 import random
 import string
 
@@ -15,4 +19,3 @@ def random_integer(digits):
 
 def chance(percentage):
     return random.randint(1, 100) < percentage
-

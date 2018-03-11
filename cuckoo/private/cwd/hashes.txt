@@ -261,17 +261,24 @@ da39a3ee5e6b4b0d3255bfef95601890afd80709 pidfiles/.gitignore
 554151cf678d3304e5c083ecf1a15631e0271bc7 stuff/mitm.py
 da39a3ee5e6b4b0d3255bfef95601890afd80709 yara/office/.gitignore
 
-# Macro dir addition
-da39a3ee5e6b4b0d3255bfef95601890afd80709 macro/.gitignore
-ef8dac0fae55637c4f0ea2705037aee567b9dc88 macro/recorder.zip
-da39a3ee5e6b4b0d3255bfef95601890afd80709 storage/macros/.gitignore
-
 # TBD
 cde76689871c88ef2d4a8fe0c3166eb61611eecf analyzer/darwin/analyzer.py
 12be07bcede77c7b505a1999ffcdd1128bf2446f analyzer/darwin/lib/api/__init__.py
 f47c2c7c0b1dddee583e81b95af5a8bd91b0dfec analyzer/darwin/lib/api/screenshot.py
 bf3c56805ea0bf44a7fb6c8c16ee91e9d22f9a17 analyzer/darwin/modules/auxiliary/screenshots.py
 938296b4ffd21227b734c0a0f2aa1d42af30b133 analyzer/windows/analyzer.py
+da39a3ee5e6b4b0d3255bfef95601890afd80709 analyzer/windows/files/.gitignore
+af6db14b66457ccbab720b71c76e751c5e042b5c analyzer/windows/files/humanschedule.json
+7556589bba002291ac171d2e9065247969bdd776 analyzer/windows/lib/common/abstracts.py
+e6f4c1c099b1622397114b6011dba001489a61a5 analyzer/windows/lib/common/defines.py
+d651a4b70e9a2507dd4db4ed2d5dd21432238d4d analyzer/windows/lib/common/rand.py
+05f3c04b8f04eff7977d6a19b0cad67cf86c6283 analyzer/windows/lib/common/uihelper.py
 fa870428bb4f9191141f7302790fb9509da8d73b analyzer/windows/lib/core/ioctl.py
 92e78eb12eef02f676193213a33fb33ab4ef8582 analyzer/windows/lib/core/packages.py
+2d6708cfa2d31650d1e9bba7919016d323431a05 analyzer/windows/modules/auxiliary/human.py
+e9c82162b047a7610d080f40c181a00d67b0969d analyzer/windows/modules/auxiliary/recordmacro.py
 ef61874f212369d734b731f99d01887f317bf49a analyzer/windows/modules/packages/jse.py
+83b6b1ac1f006b83572cba0e9f77300b56ff94ca analyzer/windows/modules/packages/recordmacro.py
+67fc958553f6278bd6c999e7c5754f7f55565e2b human/default.json
+da39a3ee5e6b4b0d3255bfef95601890afd80709 macro/.gitignore
+da39a3ee5e6b4b0d3255bfef95601890afd80709 storage/macros/.gitignore

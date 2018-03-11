@@ -1,4 +1,4 @@
-# Copyright (C) 2016-2017 Cuckoo Foundation.
+# Copyright (C) 2016-2018 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -41,7 +41,6 @@ from cuckoo.processing.strings import Strings
 from cuckoo.processing.suricata import Suricata
 from cuckoo.processing.targetinfo import TargetInfo
 from cuckoo.processing.virustotal import VirusTotal
-
 
 try:
     from cuckoo.processing.memory import obj as vol_obj, exc as vol_exc

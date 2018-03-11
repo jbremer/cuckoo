@@ -1,5 +1,5 @@
 # Copyright (C) 2012-2013 Claudio Guarnieri.
-# Copyright (C) 2014-2017 Cuckoo Foundation.
+# Copyright (C) 2014-2018 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -68,15 +68,16 @@ def analyzer_zipfile(platform, monitor):
 
         # Upload files from the following dirs to the paths on the machine
         uploaddirs = [
-            (dirpath, "bin"), (cwd("human"), "files"),
-            (cwd("storage", "macros"), "files")
+            (dirpath, "bin"),
+            (cwd("human"), "files"),
+            (cwd("storage", "macros"), "files"),
         ]
 
-        for upload in uploaddirs:
-            for name in os.listdir(upload[0]):
+        for srcpath, dstpath in uploaddirs:
+            for name in os.listdir(srcpath):
                 zip_file.write(
-                    os.path.join(upload[0], name),
-                    os.path.join(upload[1], name)
+                    os.path.join(srcpath, name),
+                    os.path.join(dstpath, name)
                 )
 
         # Dump compiled "dumpmem" Yara rules for zer0m0n usage.

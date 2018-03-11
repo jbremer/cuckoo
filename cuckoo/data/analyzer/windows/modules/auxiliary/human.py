@@ -1,5 +1,5 @@
 # Copyright (C) 2012-2013 Claudio Guarnieri.
-# Copyright (C) 2014-2017 Cuckoo Foundation.
+# Copyright (C) 2014-2018 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -18,7 +18,6 @@ from lib.common.defines import (
 )
 from lib.common.rand import chance
 from lib.common.uihelper import Autotyper, Mouse, HwndHelper, Window, Software
-from lib.common.utils import get_prefix_keys
 
 log = logging.getLogger(__name__)
 
@@ -578,7 +577,7 @@ class Human(threading.Thread, Auxiliary):
         """Use options to determine which Action modules should be
         added to the queue"""
         if "human.actions" not in self.options:
-            return False    
+            return False
 
         for action in self.options.get("human.actions", "").split(","):
             action = action.strip()
@@ -590,8 +589,9 @@ class Human(threading.Thread, Auxiliary):
             # passed to the action when it is about to run
             action_key = "human.%s." % action
             data = {}
-            for key in get_prefix_keys(action_key, self.options.keys()):
-                data[key.replace(action_key, "")] = self.options[key]
+            for key, value in self.options.items():
+                if key.startswith(action_key):
+                    data[key.replace(action_key, "")] = self.options[key]
 
             instance = self.enabled_modules.get(action)()
             instance.set_options(self.options)
@@ -735,7 +735,10 @@ class Human(threading.Thread, Auxiliary):
         ret = (None, None, None)
         for action in self.actions:
             if action[2].delay > self.analyzer.time_counter:
-                log.info("Module '%s' has delay. Not playing it yet. Delay: %s", action[2].name, action[2].delay)
+                log.info(
+                    "Module '%s' has delay. Not playing it yet. Delay: %s",
+                    action[2].name, action[2].delay
+                )
             else:
                 ret = self.actions.pop(self.actions.index(action))
                 break

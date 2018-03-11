@@ -1,5 +1,5 @@
-# Copyright (C) 2010-2013 Claudio Guarnieri.
-# Copyright (C) 2014-2017 Cuckoo Foundation.
+# Copyright (C) 2012-2013 Claudio Guarnieri.
+# Copyright (C) 2014-2018 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -200,19 +200,18 @@ class Auxiliary(object):
     def stop(self):
         pass
 
-
 class Action(object):
     """Class uses by the Human module to implement action
     that need to be performed to simulate human behavior
 
-    Two types of actions can be create. alwaysrun True and False.
+    Two types of actions can be created: alwaysrun with True or False.
     False is for 'large' actions that are only performed when a specific
     schedule is chosen. True is always performed if the Human module is
-    enabled (unless specific action is disabled)
+    enabled (unless specific action is disabled).
     """
 
     # Used to display name and see if any options were given for this module
-    # EG: human.modulename=0
+    # (e.g., human.modulename=0).
     name = ""
     alwaysrun = False
     multi_instance = False
@@ -243,8 +242,7 @@ class Action(object):
     def get_option(self, name):
         """Retrieves options 'name' for this specific action
         @param name: Name of option to retrieve."""
-        name = "human.%s.%s" % (self.name, name)
-        return self.options.get(name)
+        return self.options.get("human.%s.%s" % (self.name, name))
 
     def calculate_runs(self, duration):
         """The amount of seconds the module should run is passed.

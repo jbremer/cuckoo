@@ -1,5 +1,5 @@
 # Copyright (C) 2011-2013 Claudio Guarnieri.
-# Copyright (C) 2014-2017 Cuckoo Foundation.
+# Copyright (C) 2014-2018 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -119,7 +119,6 @@ CREATE_ALWAYS             = 2
 OPEN_EXISTING             = 3
 OPEN_ALWAYS               = 4
 TRUNCATE_EXISTING         = 5
-
 
 class VirtualKeys(object):
     VK_0 = 0x30

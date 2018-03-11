@@ -56,5 +56,4 @@ class Macro(Processing):
             shutil.copyfile(macro_path, copied_macro)
 
         data["recordings"].sort()
-
         return data

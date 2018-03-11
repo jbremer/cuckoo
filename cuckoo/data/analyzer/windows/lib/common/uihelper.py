@@ -3,13 +3,12 @@
 # See the file 'docs/LICENSE' for copying permission
 
 import ctypes
+import ctypes.wintypes
 import logging
 import os
 import random
 import subprocess
 import time
-
-from ctypes import wintypes
 
 from lib.common.defines import (
     USER32, KERNEL32, WM_CLOSE, WM_GETTEXT, WM_GETTEXTLENGTH, BM_CLICK,
@@ -323,7 +322,7 @@ class HwndHelper(object):
     @staticmethod
     def _gethwnd(hwnd, pid):
         if USER32.IsWindowVisible(hwnd):
-            window_pid = wintypes.DWORD()
+            window_pid = ctypes.wintypes.DWORD()
             USER32.GetWindowThreadProcessId(hwnd, ctypes.byref(window_pid))
             if window_pid.value == pid.contents.value:
                 HwndHelper.tmp_hwnd[pid.contents.value] = hwnd
