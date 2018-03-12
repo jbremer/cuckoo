@@ -1,4 +1,4 @@
-# Copyright (C) 2016-2017 Cuckoo Foundation.
+# Copyright (C) 2016-2018 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -31,7 +31,7 @@ tcpdump = /usr/sbin/tcpdump
 interface = vboxnet0
 """
 
-class TestConfig:
+class TestConfig(object):
     def setup(self):
         set_cwd(tempfile.mkdtemp())
 
@@ -1126,6 +1126,17 @@ script = mitm.py
     cfg = Config.from_confdir(cwd("conf"), loose=True)
     cfg = migrate(cfg, "2.0.4", "2.0.5")
     assert cfg["auxiliary"]["mitm"]["script"] == "stuff/mitm.py"
+
+def test_migration_205_206():
+    set_cwd(tempfile.mkdtemp())
+    Folders.create(cwd(), "conf")
+    Files.create(cwd("conf"), "processing.conf", """
+[targetinfo]
+enabled = yes
+""")
+    cfg = Config.from_confdir(cwd("conf"), loose=True)
+    cfg = migrate(cfg, "2.0.5", "2.0.6")
+    assert cfg["processing"]["macro"]["enabled"] is True
 
 class FullMigration(object):
     DIRPATH = None
