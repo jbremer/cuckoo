@@ -225,6 +225,7 @@ class Action(object):
         self.software = None
         self.schedule_count = 0
         self.delay = 0
+        self.wait = 0
 
     @classmethod
     def is_enabled(cls, options):

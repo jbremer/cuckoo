@@ -571,7 +571,27 @@ class Human(threading.Thread, Auxiliary):
         if not self.queue_from_options():
             schedule = self.get_schedule()
             if schedule:
-                self.calculate_queue(schedule)
+                if schedule.get("sequential"):
+                    self.queue_from_sequence(schedule)
+                else:
+                    self.calculate_queue(schedule)
+
+    def queue_from_sequence(self, schedule):
+        """Create a queue exactly as specified in the passed
+        schedule. Order actions by 'order' key"""
+        sequence = schedule.get("sequential", [])
+        sequence = sorted(sequence, key=lambda a: a.get("order", 999))
+
+        for action in sequence:
+            if action["module"] not in self.enabled_modules:
+                continue
+
+            instance = self._get_instance(action)
+
+            instance.schedule_count += 1
+            self.actions.append(
+                (action.get("duration", 1) * 60, action.get("data"), instance)
+            )
 
     def queue_from_options(self):
         """Use options to determine which Action modules should be
@@ -680,7 +700,14 @@ class Human(threading.Thread, Auxiliary):
         # No instance for this module yet, create it.
         module = self.enabled_modules[action["module"]]()
         module.set_options(self.options)
+
+        # Delay is the time in seconds of the analysis after which the action
+        # is allowed to start
         module.delay = action.get("delay", 0)
+
+        # Wait is the time in seconds the module will wait to run when it is
+        # being started (Happens every time it is called)
+        module.wait = action.get("wait", 0)
         name = module.name
 
         # If this module is of a type that allows multiple instances,
@@ -752,8 +779,6 @@ class Human(threading.Thread, Auxiliary):
         if not int(self.options.get("human", 1)):
             self.stop()
 
-        log.info("LOADED ACTIONS: %s", self.actions)
-
         while self.do_run:
             self.run_small_actions()
 
@@ -776,6 +801,8 @@ class Human(threading.Thread, Auxiliary):
             if not action.active:
                 action.calculate_runs(duration)
                 action.active = True
+                if action.wait:
+                    time.sleep(action.wait)
             if action.runs:
                 action.run()
                 action.runs -= 1
