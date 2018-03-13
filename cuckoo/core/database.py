@@ -1104,18 +1104,32 @@ class Database(object):
                         custom, owner, machine, platform, tags, memory,
                         enforce_timeout, clock, "file", submit_id)
 
-    def add_macrorecord(self, zip_path, name=None, machine=None, owner=None):
+    def add_macrorecord(self, zip_path, name=None, machine=None, owner=None,
+                        options={}):
         """Add new macro recording task
         @param zip_path: path to the zip containing the macro software
         @param name: name for the recording
         @param machine: machine to create the recording on
         @param owner: task owner
         """
-        options = {
+        if options and not isinstance(options, dict):
+            options = parse_options(options)
+
+        minimal_options = {
             "free": 1,
-            "human": 0,
             "screenshots": 0
         }
+
+        if "human.schedule" in options:
+            options.update({
+                "human.move_mouse": 0,
+                "human.click_mouse" :0,
+                "human.click_buttons": 0
+            })
+            options.update(minimal_options)
+        else:
+            options.update(minimal_options)
+            options["human"] = 0
 
         if name:
             options["macrorecord.name"] = name

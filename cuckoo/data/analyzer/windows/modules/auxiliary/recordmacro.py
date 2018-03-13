@@ -15,6 +15,7 @@ from lib.common.abstracts import Auxiliary
 from lib.common.exceptions import CuckooError
 from lib.common.rand import random_string
 from lib.common.results import upload_to_host
+from lib.common.uihelper import HwndHelper, Window
 
 log = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ class RecordMacro(threading.Thread, Auxiliary):
         self.uploaded = None
         self.macro_dir = None
         self.settings = {
-            "name": self.options.get("macrorecord.name") or "macro_recording",
+            "name": self.options.get("macrorecord.name", "macro1"),
             "CurForm": "3",
             "chbTray": "0",
             "chbMinimize": "0",
@@ -85,10 +86,22 @@ class RecordMacro(threading.Thread, Auxiliary):
             fp.write(macro_options)
 
     def run(self):
-        uploaded = {}
-
         if self.analyzer.config.package != "recordmacro":
             return
+
+        uploaded = {}
+
+        # If the human module is not specifically disabled, minimize
+        # the recorder, as it might be in the way of any macros being played
+        if "human" not in self.options and self.analyzer.pids:
+            log.debug(
+                "Minimizing macro recorder because human module is not"
+                " disabled"
+            )
+            record_pid = self.analyzer.pids[0]
+            hwnd = HwndHelper.search_hwnd(record_pid)
+            if hwnd:
+                Window(hwnd).minimized()
 
         while self.do_run:
             time.sleep(1)

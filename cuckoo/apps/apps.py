@@ -164,7 +164,9 @@ def submit_tasks(target, options, package, custom, owner, timeout, priority,
             print "Macro '%s' exists in storage/macros" % record_macro
             return
 
-        task_id = db.add_macrorecord(recorder, record_macro, machine, owner)
+        task_id = db.add_macrorecord(
+            recorder, record_macro, machine, owner, options
+        )
         yield "Macro recording: '%s'" % record_macro, machine, task_id
         return
 
