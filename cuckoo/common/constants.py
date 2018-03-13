@@ -12,6 +12,7 @@ GITHUB_URL = "https://github.com/cuckoosandbox/cuckoo"
 ISSUES_PAGE_URL = "https://github.com/cuckoosandbox/cuckoo/issues"
 DOCS_URL = "https://cuckoo.sh/docs"
 MACRO_URL = "http://www.perfectautomation.com/downloads/pautomation-portable.zip"
+MACRO_SHA1 = "ef8dac0fae55637c4f0ea2705037aee567b9dc88"
 
 def faq(entry):
     return "%s/faq/index.html#%s" % (DOCS_URL, entry)

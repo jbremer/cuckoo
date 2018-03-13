@@ -18,7 +18,7 @@ import time
 
 from cuckoo.common.colors import bold, red, yellow
 from cuckoo.common.config import config, emit_options, Config
-from cuckoo.common.constants import MACRO_URL
+from cuckoo.common.constants import MACRO_URL, MACRO_SHA1, ISSUES_PAGE_URL
 from cuckoo.common.elastic import elastic
 from cuckoo.common.exceptions import (
     CuckooOperationalError, CuckooDatabaseError, CuckooDependencyError
@@ -139,30 +139,51 @@ def submit_tasks(target, options, package, custom, owner, timeout, priority,
 
     if record_macro:
         if not machine:
-            print "Please select a machine on which to record the macro"
+            log.warning("Please select a machine on which to record the macro")
             return
 
-        recorder = cwd("macro", "recorder.zip")
-        if not os.path.exists(os.path.join(recorder)):
-            log.debug("Downloading macro software")
-            r = requests.get(MACRO_URL)
-
-            if r.status_code != 200:
-                log.error("Failed to download macro software")
-                return
-
-            with open(recorder, "wb") as fp:
-                fp.write(r.content)
+        if " " in record_macro:
+            log.warning("Please choose a macro name without spaces")
+            return
 
         # Check if the name is not already used for an existing macro
-        record_macro = record_macro.replace(" ", "")
         recordings = [
             m.split(".", 1)[0] for m in os.listdir(cwd("storage", "macros"))
         ]
 
         if record_macro in recordings:
-            print "Macro '%s' exists in storage/macros" % record_macro
+            log.warning("Macro '%s' exists in storage/macros", record_macro)
             return
+
+        recorder = cwd("macro", "recorder.zip")
+        if not os.path.exists(os.path.join(recorder)):
+            r = None
+            log.debug("Downloading macro software")
+            try:
+                r = requests.get(MACRO_URL)
+            except requests.RequestException as e:
+                log.error("Error downloading macro software: %s", e)
+
+            if not r or r.status_code != 200:
+                log.info(
+                    "Failed to download macro software. It can be manually"
+                    " downloaded from: '%s'. After downloading, store the"
+                    " zip at: '%s'", MACRO_URL, recorder
+                )
+                return
+
+            with open(recorder, "wb") as fp:
+                fp.write(r.content)
+
+            if File(recorder).get_sha1() != MACRO_SHA1:
+                log.error(
+                    "Downloaded macro recorder '%s' does not match expected"
+                    " sha1 file hash '%s'. This could indicate the incorrect"
+                    " file was downloaded. If you see this message, please"
+                    " report it by creating an issue at: %s",
+                    recorder, MACRO_SHA1, ISSUES_PAGE_URL
+                )
+                return
 
         task_id = db.add_macrorecord(
             recorder, record_macro, machine, owner, options
