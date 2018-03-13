@@ -1112,24 +1112,26 @@ class Database(object):
         @param machine: machine to create the recording on
         @param owner: task owner
         """
+        minimal_options = {
+            "free": 1,
+            "screenshots": 0,
+            "human": 0
+        }
+        if not options:
+            options = {}
+
         if options and not isinstance(options, dict):
             options = parse_options(options)
 
-        minimal_options = {
-            "free": 1,
-            "screenshots": 0
-        }
+        options.update(minimal_options)
 
-        if "human.schedule" in options:
+        if "human.schedule" in options or "human.actions" in options:
             options.update({
+                "human": 1,
                 "human.move_mouse": 0,
-                "human.click_mouse" :0,
+                "human.click_mouse": 0,
                 "human.click_buttons": 0
             })
-            options.update(minimal_options)
-        else:
-            options.update(minimal_options)
-            options["human"] = 0
 
         if name:
             options["macrorecord.name"] = name

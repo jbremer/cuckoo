@@ -26,10 +26,10 @@ class RecordMacro(Package):
 
         # If the human module is not specifically disabled, minimize
         # the recorder, as it might be in the way of any macros being played
-        if "human" not in self.options:
+        if int(self.options.get("human", 1)):
             # Give the recorder a little time to start before trying to
             # manipulate the window state
-            time.sleep(5)
+            time.sleep(3)
             log.debug(
                 "Minimizing macro recorder because human module is not"
                 " disabled"
