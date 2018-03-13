@@ -103,6 +103,13 @@ class RecordMacro(threading.Thread, Auxiliary):
                 if uploaded.get(filename, 0) >= edittime:
                     continue
 
+                # Hacky way to verify that the file is not still being used
+                # by the recorder.
+                try:
+                    os.rename(mpath, mpath)
+                except WindowsError:
+                    continue
+
                 macro_name = filename
                 copy_to = os.path.join(self.uploaded, filename)
 
