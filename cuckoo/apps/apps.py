@@ -148,11 +148,11 @@ def submit_tasks(target, options, package, custom, owner, timeout, priority,
 
         # Check if the name is not already used for an existing macro
         recordings = [
-            m.split(".", 1)[0] for m in os.listdir(cwd("storage", "macros"))
+            m.split(".", 1)[0] for m in os.listdir(cwd("macro"))
         ]
 
         if record_macro in recordings:
-            log.warning("Macro '%s' exists in storage/macros", record_macro)
+            log.warning("Macro '%s' exists in: %s", record_macro, cwd("macro"))
             return
 
         recorder = cwd("macro", "recorder.zip")
@@ -543,7 +543,6 @@ def migrate_cwd():
     mkdir(cwd("stuff"))
     mkdir(cwd("yara", "office"))
     mkdir(cwd("macro"))
-    mkdir(cwd("storage", "macros"))
 
     # Create the new $CWD/whitelist/ directory.
     if not os.path.exists(cwd("whitelist")):

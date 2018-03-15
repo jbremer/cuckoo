@@ -752,10 +752,8 @@ class TestMigrateCWD(object):
         set_cwd(tempfile.mkdtemp())
         cuckoo_create()
         shutil.rmtree(cwd("macro"))
-        shutil.rmtree(cwd("storage", "macros"))
         migrate_cwd()
         assert os.path.exists(cwd("macro"))
-        assert os.path.exists(cwd("storage", "macros"))
 
 class TestCommunitySuggestion(object):
     @property

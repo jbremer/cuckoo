@@ -645,7 +645,7 @@ class TestProcessing(object):
         m.set_path(analysis_path)
         results = m.run()
 
-        dirlist = os.listdir(cwd("storage", "macros"))
+        dirlist = os.listdir(cwd("macro"))
         assert len(results["recordings"]) == 2
         assert results["record_name"] == "doge"
         assert "doge.exe" in dirlist

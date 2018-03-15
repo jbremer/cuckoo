@@ -25,19 +25,13 @@ class Macro(Processing):
             "recordings": []
         }
 
-        recordings_dir = cwd("storage", "macros")
-        if not os.path.isdir(recordings_dir):
-            os.mkdir(recordings_dir)
-
+        recordings_dir = cwd("macro")
         if not os.path.isdir(self.macro_path):
             return
 
         for macro in os.listdir(self.macro_path):
-            if not macro.endswith(".exe"):
-                continue
-
             macro_path = os.path.join(self.macro_path, macro)
-            if not os.path.isfile(macro_path):
+            if not os.path.isfile(macro_path) or not macro.endswith(".exe"):
                 continue
 
             data["recordings"].append(macro)
