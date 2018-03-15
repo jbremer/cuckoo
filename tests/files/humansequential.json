@@ -1,0 +1,17 @@
+{
+    "sequential": [
+        {
+            "module": "playmacro",
+            "data": {"name": "macro1"},
+            "wait": 5
+        },
+        {
+            "module": "playmacro",
+            "data": {"name": "macro2"}
+        },
+        {
+            "module": "playmacro",
+            "data": {"name": "macro3"}
+        }
+    ]
+}
