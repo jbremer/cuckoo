@@ -12,6 +12,7 @@ import requests
 import socket
 import time
 import xmlrpclib
+import yaml
 import zipfile
 
 from cuckoo.common.config import config, parse_options
@@ -22,16 +23,17 @@ from cuckoo.common.constants import (
 from cuckoo.common.exceptions import (
     CuckooGuestError, CuckooGuestCriticalTimeout
 )
-from cuckoo.common.utils import TimeoutServer
+from cuckoo.common.utils import TimeoutServer, get_macro_paths
 from cuckoo.core.database import Database
 from cuckoo.misc import cwd
 
 log = logging.getLogger(__name__)
 db = Database()
 
-def analyzer_zipfile(platform, monitor):
+def analyzer_zipfile(platform, monitor, options):
     """Creates the Zip file that is sent to the Guest."""
     t = time.time()
+    options = parse_options(options["options"])
 
     zip_data = io.BytesIO()
     zip_file = zipfile.ZipFile(zip_data, "w", zipfile.ZIP_STORED)
@@ -66,19 +68,38 @@ def analyzer_zipfile(platform, monitor):
             monitor = os.path.basename(open(dirpath, "rb").read().strip())
             dirpath = cwd("monitor", monitor)
 
-        # Upload files from the following dirs to the paths on the machine
-        uploaddirs = [
-            (dirpath, "bin"),
-            (cwd("human"), "files"),
-            (cwd("storage", "macros"), "files"),
-        ]
+        schedule = options.get("human.schedule", "")
+        schedule_json = "{}"
+        if schedule and not schedule.endswith(".yaml"):
+            schedule = "%s.yaml" % schedule
 
-        for srcpath, dstpath in uploaddirs:
-            for name in os.listdir(srcpath):
-                zip_file.write(
-                    os.path.join(srcpath, name),
-                    os.path.join(dstpath, name)
-                )
+        # User can specify the file being uploaded, verify if is expected path
+        schedule_path = os.path.realpath(cwd("human", schedule))
+        if os.path.dirname(schedule_path) == cwd("human"):
+            if os.path.isfile(schedule_path):
+                # Dump yaml to json for the human module to use
+                try:
+                    schedule_json = json.dumps(yaml.load(
+                        open(schedule_path, "rb")
+                    ))
+                    zip_file.writestr(
+                        "files/%s.json" % options.get("human.schedule"),
+                        schedule_json
+                    )
+                except yaml.YAMLError as e:
+                    log.error("Error while reading human schedule file: %s", e)
+
+        for name in os.listdir(dirpath):
+            zip_file.write(
+                os.path.join(dirpath, name), os.path.join("bin", name)
+            )
+
+        # Retrieve macros passed through options or schedule and also
+        # upload them
+        for macro in get_macro_paths(options, json.loads(schedule_json)):
+            zip_file.write(
+                macro, os.path.join("files", os.path.basename(macro))
+            )
 
         # Dump compiled "dumpmem" Yara rules for zer0m0n usage.
         zip_file.write(cwd("stuff", "dumpmem.yarac"), "bin/rules.yarac")
@@ -149,11 +170,11 @@ class OldGuestManager(object):
         self.server._set_timeout(None)
         return True
 
-    def upload_analyzer(self, monitor):
+    def upload_analyzer(self, monitor, options):
         """Upload analyzer to guest.
         @return: operation status.
         """
-        zip_data = analyzer_zipfile(self.platform, monitor)
+        zip_data = analyzer_zipfile(self.platform, monitor, options)
 
         log.debug(
             "Uploading analyzer to guest (id=%s, ip=%s, monitor=%s, size=%d)",
@@ -190,7 +211,7 @@ class OldGuestManager(object):
             self.wait(CUCKOO_GUEST_INIT)
 
             # Invoke the upload of the analyzer to the guest.
-            self.upload_analyzer(monitor)
+            self.upload_analyzer(monitor, options)
 
             # Give the analysis options to the guest, so it can generate the
             # analysis.conf inside the guest.
@@ -389,7 +410,7 @@ class GuestManager(object):
 
     def upload_analyzer(self, monitor):
         """Upload the analyzer to the Virtual Machine."""
-        zip_data = analyzer_zipfile(self.platform, monitor)
+        zip_data = analyzer_zipfile(self.platform, monitor, self.options)
 
         log.debug(
             "Uploading analyzer to guest (id=%s, ip=%s, monitor=%s, size=%d)",

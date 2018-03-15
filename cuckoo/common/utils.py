@@ -355,3 +355,34 @@ def list_of_ints(l):
 
 def list_of_strings(l):
     return list_of(l, basestring)
+
+def get_macro_paths(options, schedule={}):
+    """Use options and human schedule to create a list of existing
+    macro exe files"""
+    tmp = []
+    if options.get("human.playmacro.name"):
+        tmp.append(options.get("human.playmacro.name"))
+
+    for actionkey in ["sequential", "tasks", "recreation"]:
+        for action in schedule.get(actionkey, []):
+            if action.get("module") == "playmacro":
+                macro = action.get("data", {}).get("name")
+                if macro:
+                    tmp.append(macro)
+
+    macros = []
+    macro_path = cwd("macro")
+    for m in tmp:
+        if not m.endswith(".exe"):
+            m = "%s.exe" % m
+
+        full_path = os.path.realpath(os.path.join(macro_path, m))
+        if os.path.dirname(full_path) != macro_path:
+            continue
+
+        if os.path.isfile(full_path):
+            macros.append(full_path)
+        else:
+            log.warning("Macro '%s' does not exist", m)
+
+    return macros
