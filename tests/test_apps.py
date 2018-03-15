@@ -753,7 +753,15 @@ class TestMigrateCWD(object):
         cuckoo_create()
         shutil.rmtree(cwd("macro"))
         migrate_cwd()
-        assert os.path.exists(cwd("macro"))
+        assert os.path.isdir(cwd("macro"))
+
+    def test_human_dir(self):
+        set_cwd(tempfile.mkdtemp())
+        cuckoo_create()
+        shutil.rmtree(cwd("human"))
+        migrate_cwd()
+        assert os.path.isdir(cwd("human"))
+        assert os.path.isfile(cwd("human", "default.yaml"))
 
 class TestCommunitySuggestion(object):
     @property
