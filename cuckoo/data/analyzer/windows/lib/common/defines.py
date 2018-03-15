@@ -322,7 +322,7 @@ class POINT(Structure):
         ("y", c_ulong)
     ]
 
-class _RECT(Structure):
+class RECT(Structure):
     _fields_ = [
         ("left", c_ulong),
         ("top", c_ulong),

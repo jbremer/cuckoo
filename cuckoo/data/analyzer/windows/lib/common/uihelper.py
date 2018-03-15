@@ -13,7 +13,7 @@ import time
 from lib.common.defines import (
     USER32, KERNEL32, WM_CLOSE, WM_GETTEXT, WM_GETTEXTLENGTH, BM_CLICK,
     WM_LBUTTONDOWN, WM_LBUTTONUP, SW_RESTORE, SW_MAXIMIZE, SW_MINIMIZE,
-    MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, VirtualKeys, POINT, _RECT,
+    MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, VirtualKeys, POINT, RECT,
     MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, MOUSEEVENTF_WHEEL,
     EnumWindowsProc
 )
@@ -104,7 +104,7 @@ class Window(object):
         KERNEL32.Sleep(100)
 
     def get_window_rect(self):
-        rect = _RECT()
+        rect = RECT()
         USER32.GetWindowRect(self.hwnd, ctypes.byref(rect))
         return rect
 
