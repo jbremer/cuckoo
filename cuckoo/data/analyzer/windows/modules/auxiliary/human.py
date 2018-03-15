@@ -552,8 +552,10 @@ class Human(threading.Thread, Auxiliary):
         self.do_run = True
 
     def init(self):
-        """Creates an instance for each available action. Adds it to
-        the enabled list of actions if the action was not disabled by options
+        """Creates a dict of action modules and uses the options
+        to determine what modules should be disabled, and to
+        determine if and what the human schedule should be created into
+        a queue of actions.
         """
         for module in self.modules:
             if not module.is_enabled(self.options):
@@ -783,7 +785,7 @@ class Human(threading.Thread, Auxiliary):
             self.run_small_actions()
 
             # If the actions queue is empty, all actions were performed
-            if not self.actions:
+            if not self.actions and not action:
                 continue
 
             # Get a new action from the action queue
