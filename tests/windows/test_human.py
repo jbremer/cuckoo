@@ -797,3 +797,82 @@ class TestUseCalculator(object):
         u.action_end()
         u.window.set_minimized.assert_called_once()
         ms.assert_called_once_with(3)
+
+class TestBrowseWebsite(object):
+
+    def test_constants(self):
+        assert BrowseWebsite.multi_instance
+        assert BrowseWebsite.name == "browsewebsite"
+
+    @mock.patch("modules.auxiliary.human.Window")
+    @mock.patch("modules.auxiliary.human.Autotyper")
+    @mock.patch("modules.auxiliary.human.Software")
+    def test_init(self, ms, ma, mw):
+        software = mock.MagicMock()
+        ms.return_value = software
+        window = mock.MagicMock()
+        mw.return_value = window
+        b = BrowseWebsite()
+        b.set_config({"url": "http://example.com/42"})
+        b.init()
+
+        ms.assert_called_once_with(
+            "iexplorer",
+            "C:\\Program Files\\Internet Explorer\\iexplore.exe",
+            ["http://example.com/42"]
+        )
+        software.start.assert_called_once()
+        mw.assert_called_once_with(software.hwnd)
+        ma.assert_called_once_with(window)
+
+    def test_calcruns(self):
+        b = BrowseWebsite()
+        b.calculate_runs(120)
+        assert b.runs == 12
+        b.calculate_runs(124)
+        assert b.runs == 12
+
+    @mock.patch("time.sleep")
+    def test_run(self, ms):
+        b = BrowseWebsite()
+        b.software = mock.MagicMock()
+        b.window = mock.MagicMock()
+        b.mouse = mock.MagicMock()
+        b.run()
+
+        b.window.set_maximized.assert_called_once()
+        b.window.set_foreground.assert_called_once()
+        b.window.set_focus.assert_called_once()
+        b.mouse.scroll.assert_called_with(-30)
+
+    @mock.patch("modules.auxiliary.human.USER32")
+    def test_action_end(self, mu):
+        b = BrowseWebsite()
+        b.window = mock.MagicMock()
+        b.typer = mock.MagicMock()
+        b.software = mock.MagicMock()
+        b.action_end()
+
+        b.window.set_maximized.assert_called_once()
+        b.window.set_focus.assert_called_once()
+        b.typer.press_key.assert_has_calls([
+            mock.call(0x21), mock.call(0x21), mock.call(0x21),
+            mock.call(0x21), mock.call(0x21)
+        ])
+        b.window.set_minimized.assert_called_once()
+
+    @mock.patch("modules.auxiliary.human.USER32")
+    def test_action_end_maximized(self, mu):
+        mu.IsIconic.return_value = False
+        b = BrowseWebsite()
+        b.window = mock.MagicMock()
+        b.typer = mock.MagicMock()
+        b.software = mock.MagicMock()
+        b.action_end()
+
+        b.window.set_maximized.assert_not_called()
+        b.typer.press_key.assert_has_calls([
+            mock.call(0x21), mock.call(0x21), mock.call(0x21),
+            mock.call(0x21), mock.call(0x21)
+        ])
+        b.window.set_minimized.assert_called_once()
