@@ -2,6 +2,7 @@
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
+import copy
 import json
 import mock
 
@@ -9,6 +10,7 @@ from modules.auxiliary.human import (
     Human, BrowseWebsite, DoNothing, PlayMacro, UseCalculator, WordProcessor,
     ClickMouse, MoveMouse, WindowHandler
 )
+from lib.common.uihelper import Autotyper, Mouse, HwndHelper, Window, Software
 
 class TestHuman(object):
 
@@ -520,3 +522,278 @@ class TestWordprocessor(object):
 
         w.window.set_minimized.assert_not_called()
 
+class TestClickMouse(object):
+
+    def test_constants(self):
+        classlist = [
+            "Button", "Edit", "NetUIHWND", "ToolbarWindow32", "SysTreeView32",
+            "#32768", "#32770", "Start", "MSTaskListWClass", "DirectUIHWND",
+            "SysTabControl32", "ComboBox", "ScrollBar", "msctls_trackbar32",
+            "ComboLBox", "TrayClockWClass", "ConsoleWindowClass"
+        ]
+        assert ClickMouse.alwaysrun
+        assert ClickMouse.name == "click_mouse"
+        for hwndclass in classlist:
+            assert hwndclass in ClickMouse.ignore_classes
+
+    def test_init(self):
+        c = ClickMouse()
+        c.init()
+        assert isinstance(c.mouse, Mouse)
+
+    @mock.patch("modules.auxiliary.human.Window")
+    @mock.patch("modules.auxiliary.human.USER32")
+    def test_run(self, mu, mw):
+        window = mock.MagicMock()
+        window.get_classname.return_value = "NonIgnoredClass"
+        mw.return_value = window
+        c = ClickMouse()
+        c.mouse = mock.MagicMock()
+        c.run()
+
+        c.mouse.leftclick.assert_called_once()
+
+    @mock.patch("modules.auxiliary.human.Window")
+    @mock.patch("modules.auxiliary.human.USER32")
+    def test_run_ignore(self, mu, mw):
+        window = mock.MagicMock()
+        window.get_classname.return_value = "Button"
+        mw.return_value = window
+        c = ClickMouse()
+        c.mouse = mock.MagicMock()
+        c.run()
+
+        c.mouse.leftclick.assert_not_called()
+
+class TestMoveMouse(object):
+
+    def test_constants(self):
+        assert MoveMouse.alwaysrun
+        assert MoveMouse.name == "move_mouse"
+        assert MoveMouse.reduceby == 0.15
+
+    def test_init(self):
+        m = MoveMouse()
+        m.init()
+
+        assert isinstance(m.mouse, Mouse)
+        assert m.x > 0
+        assert m.y > 0
+
+    def test_run(self):
+        m = MoveMouse()
+        m.mouse = mock.MagicMock()
+        m.x = 1920
+        m.y = 1080
+        m.run()
+        m.mouse.move_to.assert_called_once()
+        used_x = m.mouse.move_to.call_args[0][0]
+        used_y = m.mouse.move_to.call_args[0][1]
+        assert used_x >= 288 and used_x <= 1632
+        assert used_y >= 162 and used_y <= 918
+
+class TestDoNothing(object):
+
+    def test_constants(self):
+        assert not DoNothing.multi_instance
+        assert DoNothing.name == "donothing"
+
+    def test_calcruns(self):
+        d = DoNothing()
+        d.calculate_runs(120)
+        assert d.runs == 24
+        d.calculate_runs(124)
+        assert d.runs == 24
+
+    @mock.patch("time.sleep")
+    def test_run(self, ms):
+        d = DoNothing()
+        d.run()
+        ms.assert_called_once_with(5)
+
+class TestWindowHandler(object):
+
+    def test_constants(self):
+        assert WindowHandler.alwaysrun
+        assert WindowHandler.name == "click_buttons"
+        assert len(WindowHandler.rules) >= 3
+
+    @mock.patch("modules.auxiliary.human.USER32")
+    def test_run(self, mu):
+        with mock.patch('__builtin__.True', FakeBool(True, 1)):
+            w = WindowHandler()
+            WindowHandler.ignore_hwnds = [mock.MagicMock()]
+            w.run()
+            mu.EnumWindows.assert_called_once()
+            assert WindowHandler.ignore_hwnds == []
+            assert WindowHandler.action_count == 0
+
+    @mock.patch("modules.auxiliary.human.USER32")
+    def test_run_actions_remaining(self, mu):
+        with mock.patch('__builtin__.True', FakeBool(True, 1)):
+            w = WindowHandler()
+            hwnd = mock.MagicMock()
+            WindowHandler.ignore_hwnds = [hwnd]
+            WindowHandler.action_count = 1
+            w.run()
+            mu.EnumWindows.call_count == 3
+            assert WindowHandler.ignore_hwnds == [hwnd]
+            assert WindowHandler.action_count == 0
+
+    def test_best_match(self):
+        buttons = [
+            "run", "start", "running", "open"
+        ]
+        assert WindowHandler.best_match("run program", buttons) == "run"
+        assert WindowHandler.best_match("execute", buttons) is None
+        assert WindowHandler.best_match(
+            "open this document", buttons
+        ) == "open"
+
+    @mock.patch("modules.auxiliary.human.USER32")
+    def test_handle_clickables(self, mu):
+        w = mock.MagicMock()
+        w.buttons = {
+            "execute": mock.MagicMock(),
+            "run": mock.MagicMock(),
+            "open": mock.MagicMock()
+        }
+        WindowHandler.handle_clickables(w)
+        w.click_button.assert_called_once_with("run")
+
+    @mock.patch("modules.auxiliary.human.KERNEL32")
+    @mock.patch("ctypes.addressof")
+    def test_handle_rules_close(self, ma, mk):
+        WindowHandler.action_count = 0
+        w = mock.MagicMock()
+        w.get_windowtitle.return_value = "activation wizard"
+        WindowHandler.handle_rules(w)
+
+        w.close_window.assert_called_once()
+        assert WindowHandler.action_count == 1
+
+    @mock.patch("modules.auxiliary.human.KERNEL32")
+    @mock.patch("ctypes.addressof")
+    def test_handle_rules_buttonpress(self, ma, mk):
+        WindowHandler.action_count = 0
+        w = mock.MagicMock()
+        w.get_windowtitle.return_value = "confirm save as"
+        WindowHandler.handle_rules(w)
+
+        w.click_button.assert_called_once_with("yes")
+        assert WindowHandler.action_count == 1
+
+    @mock.patch("modules.auxiliary.human.handle_save_as")
+    @mock.patch("modules.auxiliary.human.KERNEL32")
+    @mock.patch("ctypes.addressof")
+    def test_handle_rules_custom(self, ma, mk, mh):
+        _orig_rules = copy.deepcopy(WindowHandler.rules)
+        WindowHandler.rules[1]["value"] = mh
+        WindowHandler.action_count = 0
+        w = mock.MagicMock()
+        w.get_windowtitle.return_value = "opslaan als"
+        WindowHandler.handle_rules(w)
+        WindowHandler.rules = _orig_rules
+
+        mh.assert_called_once_with(w)
+        assert WindowHandler.action_count == 1
+
+    @mock.patch("modules.auxiliary.human.WindowHandler.handle_clickables")
+    @mock.patch("modules.auxiliary.human.KERNEL32")
+    @mock.patch("ctypes.addressof")
+    def test_handle_rules_noaction(self, ma, mk, mh):
+        WindowHandler.action_count = 0
+        w = mock.MagicMock()
+        w.get_windowtitle.return_value = "Doges, such wow, many test"
+        WindowHandler.handle_rules(w)
+
+        mh.assert_called_once_with(w)
+        assert WindowHandler.action_count == 1
+
+class TestUseCalculator(object):
+
+    def test_constants(self):
+        assert not UseCalculator.multi_instance
+        assert UseCalculator.name == "usecalculator"
+
+    @mock.patch("modules.auxiliary.human.Window")
+    @mock.patch("modules.auxiliary.human.Autotyper")
+    @mock.patch("modules.auxiliary.human.Software")
+    def test_init(self, ms, ma, mw):
+        software = mock.MagicMock()
+        ms.return_value = software
+        window = mock.MagicMock()
+        mw.return_value = window
+        u = UseCalculator()
+        u.init()
+
+        ms.assert_called_once_with(
+            "calculator", "C:\\Windows\\System32\\calc.exe"
+        )
+        software.start.assert_called_once()
+        mw.assert_called_once_with(software.hwnd)
+        ma.assert_called_once_with(window)
+
+    @mock.patch("modules.auxiliary.human.Window")
+    @mock.patch("modules.auxiliary.human.Autotyper")
+    @mock.patch("modules.auxiliary.human.Software")
+    def test_init_fail(self, ms, ma, mw):
+        software = mock.MagicMock()
+        software.start.return_value = False
+        ms.return_value = software
+        window = mock.MagicMock()
+        mw.return_value = window
+        u = UseCalculator()
+        u.init()
+
+        ms.assert_called_once_with(
+            "calculator", "C:\\Windows\\System32\\calc.exe"
+        )
+        software.start.assert_called_once()
+        mw.assert_not_called()
+        ma.assert_not_called()
+
+    def test_calcruns(self):
+        u = UseCalculator()
+        u.calculate_runs(120)
+        assert u.runs == 1
+
+    @mock.patch("random.randint")
+    @mock.patch("modules.auxiliary.human.KERNEL32")
+    def test_run(self, mk, mr):
+        mr.side_effect = [2, 10, 20]
+        u = UseCalculator()
+        u.software = mock.MagicMock()
+        u.window = mock.MagicMock()
+        u.typer = mock.MagicMock()
+        u.run()
+
+        assert u.window.set_restored.call_count == 2
+        assert u.window.set_foreground.call_count == 2
+        assert u.window.set_focus.call_count == 2
+        u.typer.type_text.assert_has_calls([
+            mock.call("10"), mock.call("20")
+        ])
+        u.typer.press_key.assert_has_calls([
+            mock.call(0x6B), mock.call(0x6B), mock.call(0x0D)
+        ])
+
+    @mock.patch("random.randint")
+    @mock.patch("modules.auxiliary.human.KERNEL32")
+    def test_run_fail(self, mk, mr):
+        u = UseCalculator()
+        u.software = mock.MagicMock()
+        u.software.hwnd = None
+        u.typer = mock.MagicMock()
+        res = u.run()
+
+        assert not res
+        u.typer.press_key.assert_not_called()
+
+    @mock.patch("time.sleep")
+    def test_action_end(self, ms):
+        u = UseCalculator()
+        u.window = mock.MagicMock()
+        u.action_end()
+        u.window.set_minimized.assert_called_once()
+        ms.assert_called_once_with(3)
