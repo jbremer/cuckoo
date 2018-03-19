@@ -345,3 +345,178 @@ class FakeBool(object):
             self.times -= 1
             return self.bool
         return not self.bool
+
+class TestPlayMacro(object):
+
+    def test_calcruns(self):
+        p = PlayMacro()
+        p.calculate_runs(60)
+        assert p.runs == 1
+
+    @mock.patch("os.path.isfile")
+    @mock.patch("modules.auxiliary.human.Software")
+    @mock.patch("modules.auxiliary.human.Window")
+    @mock.patch("modules.auxiliary.human.HwndHelper")
+    def test_run(self, mh, mw, ms, mi):
+        software = mock.MagicMock()
+        ms.return_value = software
+        window = mock.MagicMock()
+        window.buttons = ["play"]
+        mw.return_value = window
+        p = PlayMacro()
+        p.set_config({"name": "macro1"})
+        p.run()
+
+        ms.assert_called_once_with("macro", "files\\macro1.exe")
+        software.start.assert_called_once()
+        mw.assert_called_once_with(software.hwnd)
+        mh.find_children.assert_called_once_with(window)
+        window.click_button.assert_called_once_with("play")
+
+    def test_constants(self):
+        assert PlayMacro.multi_instance
+        assert PlayMacro.name == "playmacro"
+
+class TestWordprocessor(object):
+
+    def test_constants(self):
+        assert not WordProcessor.multi_instance
+        assert WordProcessor.name == "wordprocessor"
+
+
+    @mock.patch("modules.auxiliary.human.Window")
+    @mock.patch("modules.auxiliary.human.Autotyper")
+    @mock.patch("modules.auxiliary.human.Software")
+    def test_init_default(self, ms, ma, mw):
+        software = mock.MagicMock()
+        ms.return_value = software
+        window = mock.MagicMock()
+        mw.return_value = window
+        w = WordProcessor()
+        w.set_options({})
+        w.init()
+
+        assert w.processor == "wordpad"
+        ms.assert_called_once_with(
+            "wordpad",
+            "C:\\Program Files\\Windows NT\\Accessories\\wordpad.exe",
+            []
+        )
+        software.start.assert_called_once()
+        software.isrunning.assert_called_once()
+        mw.assert_called_once_with(software.hwnd)
+        ma.assert_called_once_with(window)
+        assert w.sentences > 0
+
+    @mock.patch("modules.auxiliary.human.Window")
+    @mock.patch("modules.auxiliary.human.Autotyper")
+    @mock.patch("modules.auxiliary.human.Software")
+    def test_init_custom(self, ms, ma, mw):
+        software = mock.MagicMock()
+        ms.return_value = software
+        window = mock.MagicMock()
+        mw.return_value = window
+        w = WordProcessor()
+        w.set_options({
+            "wordprocessor.exepath": "C:\\custom.exe",
+            "wordprocessor.params": "-P -A 'doges' -X"
+        })
+        w.init()
+
+        assert w.processor == "custom"
+        ms.assert_called_once_with(
+            "custom",
+            "C:\\custom.exe",
+            "-P -A 'doges' -X"
+        )
+        software.start.assert_called_once()
+        software.isrunning.assert_called_once()
+        mw.assert_called_once_with(software.hwnd)
+        ma.assert_called_once_with(window)
+        assert w.sentences > 0
+
+    @mock.patch("modules.auxiliary.human.Window")
+    @mock.patch("modules.auxiliary.human.Autotyper")
+    @mock.patch("modules.auxiliary.human.Software")
+    def test_init_fail(self, ms, ma, mw):
+        software = mock.MagicMock()
+        software.start.return_value = False
+        ms.return_value = software
+        w = WordProcessor()
+        w.set_options({})
+        w.init()
+
+        software.start.assert_called_once()
+        software.isrunning.assert_not_called()
+        mw.assert_not_called()
+        ma.assert_not_called()
+
+    @mock.patch("modules.auxiliary.human.Window")
+    @mock.patch("modules.auxiliary.human.Autotyper")
+    @mock.patch("modules.auxiliary.human.Software")
+    def test_init_crash(self, ms, ma, mw):
+        software = mock.MagicMock()
+        software.isrunning.return_value = False
+        ms.return_value = software
+        w = WordProcessor()
+        w.set_options({})
+        res = w.init()
+
+        software.start.assert_called_once()
+        software.isrunning.assert_called_once()
+        assert not res
+        mw.assert_not_called()
+        ma.assert_not_called()
+
+    def test_calcruns(self):
+        w = WordProcessor()
+        w.calculate_runs(120)
+        assert w.runs == 24
+
+    def test_run(self):
+        w = WordProcessor()
+        w.software = mock.MagicMock()
+        w.typer = mock.MagicMock()
+        w.window = mock.MagicMock()
+        w.sentences = 5
+
+        w.run()
+        w.window.set_maximized.assert_called_once()
+        w.window.set_focus.assert_called_once()
+        w.typer.press_key.assert_called_once_with(0x23)
+        w.typer.type_sentence.assert_called_once()
+        assert w.sentences == 4
+
+    def test_run_lastsentence(self):
+        w = WordProcessor()
+        w.software = mock.MagicMock()
+        w.typer = mock.MagicMock()
+        w.window = mock.MagicMock()
+        w.sentences = 0
+
+        w.run()
+        w.window.set_maximized.assert_called_once()
+        w.window.set_focus.assert_called_once()
+        w.typer.press_key.assert_any_call(0x0D)
+        w.typer.press_key.assert_any_call(0x23)
+        w.typer.type_sentence.assert_called_once()
+        assert w.sentences > 0
+
+    def test_action_end(self):
+        w = WordProcessor()
+        w.software = mock.MagicMock()
+        w.window = mock.MagicMock()
+        w.window.is_minimized.return_value = False
+        w.action_end()
+
+        w.window.set_minimized.assert_called_once()
+
+    def test_action_end_dontminimize(self):
+        w = WordProcessor()
+        w.software = mock.MagicMock()
+        w.window = mock.MagicMock()
+        w.window.is_minimized.return_value = True
+        w.action_end()
+
+        w.window.set_minimized.assert_not_called()
+
