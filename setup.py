@@ -243,6 +243,7 @@ do_setup(
         "pytest-cov",
         "pytest-django",
         "pytest-pythonpath",
+        "pytest-timeout"
         "responses==0.5.1",
     ],
 )
