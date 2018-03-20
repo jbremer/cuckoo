@@ -10,7 +10,7 @@ from modules.auxiliary.human import (
     Human, BrowseWebsite, DoNothing, PlayMacro, UseCalculator, WordProcessor,
     ClickMouse, MoveMouse, WindowHandler
 )
-from lib.common.uihelper import Autotyper, Mouse, HwndHelper, Window, Software
+from lib.common.uihelper import Autotyper, Mouse, HwndHelper, Window
 
 class TestHuman(object):
 
