@@ -17,5 +17,6 @@ This chapter explains how to use Cuckoo.
     rooter
     feedback
     packages
+    guestaux
     results
     clean
