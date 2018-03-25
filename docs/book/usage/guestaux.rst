@@ -82,6 +82,9 @@ Supported options:
 - ``min`` - The minimum amount of minutes it should run each time it is executed
 - ``max`` - The maximum amount of minutes it should run each time it is executed
 
+Data options:
+- ``name`` - A name of the macro to run
+
 **Browsing a webpage**
 
 Simulates reading a webpage. Opens Internet explorer for a specified page and slowly scrolls over the page.
@@ -111,3 +114,45 @@ Action name: ``donothing``
 
 - ``min`` - The minimum amount of minutes it should run each time it is executed
 - ``max`` - The maximum amount of minutes it should run each time it is executed
+
+Human behavior schedule
+=======================
+
+The human behavior module needs a schedule to know what large actions to execute, as stated in the `Large actions`_ section.
+
+There are two types of schedules you can provide the human module with. A sequential and a schedule used to generate a queue of random actions. The latter
+is meant for long analyses in which it is required to fill the total analysis with simulated behavior.
+
+The human schedules are YAML files and should be placed in ``$CWD/human``.
+
+When submitting a new task, a schedule can be activated by passing the option: ``human.schedule=<schedulename>``. Pass the schedule
+without the file extension. An example of passing a schedule would be: ``human.schedule=default`` or ``human.schedule=sequential``
+
+Sequential schedule
+-------------------
+
+A sequential schedule contains a list of actions that should be executed in order. Only the specified actions will executed
+by the human module.
+
+Below is an example of ``$CWD/human/sequential.yaml``
+
+.. literalinclude:: ../../../cuckoo/data/human/sequential.yaml
+    :language: typoscript
+	
+Random queue schedule
+---------------------
+
+A random queue schedule contains actions seperated into two categories: ``tasks`` and ``recreation`` .
+The actions in both of these categories will be used to randomly generated a queue of actions that will fill the entire
+time of an analysis.
+
+For each action, a ``chance`` key should be specified. The value is used to increase/decrease the chance the action is queued.
+This can contain a number between ``0.1`` and ``0.9``.
+
+Lastly, this type of schedule should also have a ``productivity`` key. This key determines how likely it is from ``0.1`` to ``0.9`` that
+a module from the ``tasks`` list is queued, instead of a module from ``recreation``. This can be used to simulate more realistic working behavior.
+
+Below is an example of ``$CWD/human/default.yaml``
+	
+.. literalinclude:: ../../../cuckoo/data/human/default.yaml
+    :language: typoscript
