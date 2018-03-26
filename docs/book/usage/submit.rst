@@ -16,32 +16,33 @@ The easiest way to submit an analysis is to use the ``cuckoo submit`` utility.
 It currently has the following options available::
 
     $ cuckoo submit --help
-    Usage: cuckoo submit [OPTIONS] [TARGET]...
+	Usage: cuckoo submit [OPTIONS] [TARGET]...
 
-      Submit one or more files or URLs to Cuckoo.
+	  Submit one or more files or URLs to Cuckoo.
 
-    Options:
-      -u, --url           Submitting URLs instead of samples
-      -o, --options TEXT  Options for these tasks
-      --package TEXT      Analysis package to use
-      --custom TEXT       Custom information to pass along this task
-      --owner TEXT        Owner of this task
-      --timeout INTEGER   Analysis time in seconds
-      --priority INTEGER  Priority of this task
-      --machine TEXT      Machine to analyze these tasks on
-      --platform TEXT     Analysis platform
-      --memory            Enable memory dumping
-      --enforce-timeout   Don't terminate the analysis early
-      --clock TEXT        Set the system clock
-      --tags TEXT         Analysis tags
-      --baseline          Create baseline task
-      --remote TEXT       Submit to a remote Cuckoo instance
-      --shuffle           Shuffle the submitted tasks
-      --pattern TEXT      Provide a glob-pattern when submitting a
-                          directory
-      --max INTEGER       Submit up to X tasks at once
-      --unique            Only submit samples that have not been
-                          analyzed before
+	Options:
+	  -u, --url            Submitting URLs instead of samples
+	  -o, --options TEXT   Options for these tasks
+	  --package TEXT       Analysis package to use
+	  --custom TEXT        Custom information to pass along this task
+	  --owner TEXT         Owner of this task
+	  --timeout INTEGER    Analysis time in seconds
+	  --priority INTEGER   Priority of this task
+	  --machine TEXT       Machine to analyze these tasks on
+	  --platform TEXT      Analysis platform
+	  --memory             Enable full VM memory dumping
+	  --enforce-timeout    Don't terminate the analysis early
+	  --clock TEXT         Set the system clock
+	  --tags TEXT          Analysis tags
+	  --baseline           Create baseline task
+	  --remote TEXT        Submit to a remote Cuckoo instance
+	  --shuffle            Shuffle the submitted tasks
+	  --pattern TEXT       Provide a glob-pattern when submitting a directory
+	  --max INTEGER        Submit up to X tasks at once
+	  --unique             Only submit samples that have not been analyzed before
+	  --record-macro TEXT  Record a macro with given name
+	  --help               Show this message and exit.
+
       -d, --debug         Enable verbose logging
       -q, --quiet         Only log warnings and critical messages
       --help              Show this message and exit.
@@ -105,6 +106,10 @@ some options (in this case a command line argument for the malware)::
 *Example*: submit a sample for Volatility analysis (to reduce side effects of the cuckoo hooking, switch it off with *options free=True*)::
 
     $ cuckoo submit --memory --options free=yes /path/to/binary
+
+*Example*: Submit a macro recording task::
+
+    $ cuckoo submit --record-macro macro1 --machine cuckoo1
 
 .. _apipy:
 
