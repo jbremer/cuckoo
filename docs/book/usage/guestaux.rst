@@ -67,9 +67,12 @@ Types of supported actions:
 
 **Macro playing**
 
-Executes a previously recorded macro. See (TODO ADD LINK) for information on how to record macros for Cuckoo.
+Executes a previously recorded macro. See the `Macro recording (Windows)`_  section for information on how to record macros for Cuckoo.
 
 Action name: ``playmacro``
+
+Data options:
+- ``name`` - A name of the macro to run
 
 **Using wordpad**
 
@@ -81,9 +84,6 @@ Supported options:
 	
 - ``min`` - The minimum amount of minutes it should run each time it is executed
 - ``max`` - The maximum amount of minutes it should run each time it is executed
-
-Data options:
-- ``name`` - A name of the macro to run
 
 **Browsing a webpage**
 
