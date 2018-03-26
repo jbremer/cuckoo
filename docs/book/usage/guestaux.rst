@@ -156,3 +156,30 @@ Below is an example of ``$CWD/human/default.yaml``
 	
 .. literalinclude:: ../../../cuckoo/data/human/default.yaml
     :language: typoscript
+
+	
+Macro recording (Windows)
+=========================
+
+The macro recording module assists in recording macros for Cuckoo to use. The macros recorded here can be later used by the human behavior module.
+
+To start a macro recording, submit a recording task with the ``cuckoo submit`` tool. See :doc:`submit` for more information on this tool.
+A macro recording can be submitted with: ``cuckoo submit --record-macro <macroname> --machine <machinename>``. This will create a macro recording task.
+
+When your Cuckoo instance is started, this task will be started first. To be able to get into the machine, RDP will have to be activated. If Virtualbox is used, this can be achieved with the command ``vboxmanage controlvm <vmname> vrde on``. This will enable VRDP on port 3389.
+
+To record macros, Cuckoo uses `Perfect automation <http://www.perfectautomation.com/>`_. This software is automatically downloaded, uploaded to, and started in the analysis machine.
+
+When in the machine, you can almost immediately start the recording. The given macro name will already be filled in. Make sure to set the ``File`` setting to
+``Executable file (silent) (*.exe)`` before starting the recording. See an example of the correct settings below.
+
+    .. image:: ../_images/screenshots/macrosettings.png
+        :align: center
+		
+When ready to record the macro, hit the ``Record`` button. After this, take your time to perform the actions that should be recorded.  For optinal recording results, move the mouse slightly slower than you normally would. When finished recording, hit the ``Stop`` button at the bottom right of the screen.
+
+    .. image:: ../_images/screenshots/macrostop.png
+        :align: center
+
+After hitting stop, the macro exe will automatically be uploaded back to the Cuckoo host, where it will be made available for use as soon as the macro recording task
+is finished. It is possible to record multiple macros in a single session. Just be sure to change the ``Name`` field in the recorder.
