@@ -19,7 +19,7 @@ explicitly stated otherwise:
 
 * ``free`` *[yes/no]*: if enabled, no behavioral logs will be produced and the malware will be executed freely.
 * ``procmemdump`` *[yes/no]*: if enabled, take memory dumps of all actively monitored processes.
-* ``human`` *0*: if disabled, human-like interaction (i.e., mouse movements) will not be enabled
+* ``human`` *0*: if disabled, human-like interaction (i.e., mouse movements) will not be enabled. For all possible human options, see :doc:`guestaux`.
 
 Following is the list of existing packages in alphabetical order:
 

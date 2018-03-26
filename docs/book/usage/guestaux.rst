@@ -18,7 +18,9 @@ as small or large actions.
 
 Each action has a name that can be used to either enable it or disable it during an analysis.
 To disable a small action, add the option: ``human.<action name>=0``. To enable a large action, add the option
-``human.actions=<action name>``
+``human.actions=<action name>``, to pass data under a key to this action module, use: ``human.<action name>.<dataname>=data``.
+
+An example for playing a single macro: ``human.actions=playmacro,human.playmacro.name=macro1``.
 
 Small actions
 -------------
