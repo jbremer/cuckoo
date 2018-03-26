@@ -128,6 +128,50 @@ The human schedules are YAML files and should be placed in ``$CWD/human``.
 When submitting a new task, a schedule can be activated by passing the option: ``human.schedule=<schedulename>``. Pass the schedule
 without the file extension. An example of passing a schedule would be: ``human.schedule=default`` or ``human.schedule=sequential``
 
+There are a few keys that can be specified for each module to control when they get executed:
+
+* ``delay``
+
+Delay in seconds into the analysis of when the module is allowed to start. Most useful for the random queue schedule. It will cause other modules in the schedule to be queued and executed until the delay specified has been reached.
+
+Example:
+
+.. code-block:: typoscript
+
+	- module: playmacro
+	  data:
+	    name: macro1		
+	  delay: 60
+	
+* ``wait``
+
+Time in seconds the module will wait with executing a specific module when it has selected it from the queue. During this wait, nothing will happen.
+This can be useful when creating a sequential schedule containing macros that perform actions for which a wait is required afterwards.
+
+Example:
+
+.. code-block:: typoscript
+
+	- module: playmacro
+	  data:
+	    name: macro1		
+	  wait: 5
+
+	  
+* ``limit``
+
+The amount of times the specified module is allowed to be queued and executed. Only useful for the random queue schedule.
+
+Example:
+
+.. code-block:: typoscript
+
+	- module: playmacro
+	  data:
+	    name: macro1		
+	  limit: 1
+
+
 Sequential schedule
 -------------------
 
