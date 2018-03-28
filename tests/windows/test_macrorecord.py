@@ -3,6 +3,7 @@
 # See the file 'docs/LICENSE' for copying permission
 
 import mock
+import tempfile
 import os
 
 from modules.auxiliary.recordmacro import RecordMacro
@@ -49,3 +50,36 @@ class TestRecordMacro(object):
 
         for change in changed_lines:
             assert change in conf
+
+    @mock.patch("time.sleep")
+    @mock.patch("modules.auxiliary.recordmacro.upload_to_host")
+    def test_run(self, mu, ms):
+        r = RecordMacro({})
+        r.analyzer = mock.MagicMock()
+        r.analyzer.config.package = "recordmacro"
+        tmpdir = tempfile.mkdtemp()
+        r.upload = tmpdir
+        r.uploaded = os.path.join(tmpdir, "uploaded")
+        os.mkdir(r.uploaded)
+        r.do_run = FakeBool(True, 1)
+        with open(os.path.join(tmpdir, "macro1.exe"), "wb") as fp:
+            fp.write(os.urandom(64))
+
+        r.run()
+        assert os.path.isfile(os.path.join(r.uploaded, "macro1.exe"))
+        mu.assert_called_once_with(
+            os.path.join(tmpdir, "macro1.exe"), "macros\\macro1.exe"
+        )
+
+
+class FakeBool(object):
+    def __init__(self, bool, times):
+        self.bool = bool
+        self.times = times
+
+    def __nonzero__(self):
+        if self.times:
+            self.times -= 1
+            return self.bool
+        return not self.bool
+
