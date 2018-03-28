@@ -1,0 +1,10 @@
+sequential:
+- module: wordprocessor
+  duration: 1
+- module: usecalculator
+- module: donothing
+  duration: 1
+- module: browsewebsite
+  data:
+    - url: https://news.google.com/
+  duration: 2
