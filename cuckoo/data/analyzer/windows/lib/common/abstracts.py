@@ -215,6 +215,7 @@ class Action(object):
     name = ""
     alwaysrun = False
     multi_instance = False
+    moves_mouse = False
 
     def __init__(self):
         self.active = False

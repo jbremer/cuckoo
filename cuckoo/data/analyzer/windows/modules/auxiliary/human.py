@@ -467,6 +467,7 @@ class PlayMacro(Action):
 
     name = "playmacro"
     multi_instance = True
+    moves_mouse = True
 
     def calculate_runs(self, duration):
         self.runs = 1
@@ -550,6 +551,9 @@ class Human(threading.Thread, Auxiliary):
         self.always_run = []
         self.schedule = {}
         self.do_run = True
+        self.mouse = Mouse()
+        self.last_pos = None
+        self.last_action = None
 
     def init(self):
         """Creates a dict of action modules and uses the options
@@ -773,6 +777,26 @@ class Human(threading.Thread, Auxiliary):
                 break
         return ret
 
+    def detect_movement(self):
+        """Attempt to detect if the mouse was moved by anything
+        else than the human module. Pauses human if this is the case.
+
+        If an action module moved the mouse, the human module is not paused"""
+        if not self.last_pos:
+            return
+
+        if self.last_action and self.last_action.moves_mouse:
+            return
+
+        while True:
+            cur = self.mouse.get_pos()
+            if (cur.x, cur.y) == (self.last_pos.x, self.last_pos.y):
+                break
+
+            log.debug("Pausing human module, mouse was moved.")
+            self.last_pos = cur
+            time.sleep(30)
+
     def run(self):
         """Perform all small actions and queued actions from the schedule
         or ones passed as an option"""
@@ -782,15 +806,22 @@ class Human(threading.Thread, Auxiliary):
             self.stop()
 
         while self.do_run:
+            time.sleep(1)
+            self.detect_movement()
             self.run_small_actions()
+
+            self.last_pos = self.mouse.get_pos()
 
             # If the actions queue is empty, all actions were performed
             if not self.actions and not action:
+                if self.last_action:
+                    self.last_action = None
                 continue
 
             # Get a new action from the action queue
             if not action:
                 duration, data, action = self.get_action()
+                self.last_action = action
                 if not action:
                     continue
                 log.debug("Running action: %s. Data: %s", action.name, data)
@@ -812,4 +843,3 @@ class Human(threading.Thread, Auxiliary):
                 action.action_end()
                 action.active = False
                 action = None
-            time.sleep(1)
