@@ -309,6 +309,58 @@ class TestHuman(object):
         h.run_small_actions.assert_called_once()
 
     @mock.patch("time.sleep")
+    def test_detect_movement(self, ms):
+        h = Human({})
+        last_pos = mock.MagicMock()
+        last_pos.x = 42
+        last_pos.y = 24
+        h.last_pos = last_pos
+        curpos = mock.MagicMock()
+        curpos.x = 823
+        curpos.y = 324
+        h.mouse = mock.MagicMock()
+        h.mouse.get_pos.return_value = curpos
+        h.detect_movement()
+
+        ms.assert_called_once_with(30)
+        assert h.last_pos == curpos
+
+    @mock.patch("time.sleep")
+    def test_detect_movement_humancaused(self, ms):
+        h = Human({})
+        action = mock.MagicMock()
+        action.moves_mouse = True
+        h.last_action = action
+        last_pos = mock.MagicMock()
+        last_pos.x = 42
+        last_pos.y = 24
+        h.last_pos = last_pos
+        curpos = mock.MagicMock()
+        curpos.x = 823
+        curpos.y = 324
+        h.mouse = mock.MagicMock()
+        h.mouse.get_pos.return_value = curpos
+        h.detect_movement()
+
+        ms.assert_not_called()
+
+    @mock.patch("time.sleep")
+    def test_detect_movement_none(self, ms):
+        h = Human({})
+        last_pos = mock.MagicMock()
+        last_pos.x = 42
+        last_pos.y = 24
+        h.last_pos = last_pos
+        curpos = mock.MagicMock()
+        curpos.x = 42
+        curpos.y = 24
+        h.mouse = mock.MagicMock()
+        h.mouse.get_pos.return_value = curpos
+        h.detect_movement()
+
+        ms.assert_not_called()
+
+    @mock.patch("time.sleep")
     def test_run_actions(self, ts):
         h = Human({})
         h.init()
@@ -334,7 +386,7 @@ class TestHuman(object):
         a.action_end.assert_called_once()
         assert not a.active
         ts.assert_any_call(10)
-        assert ts.call_count == 4
+        assert ts.call_count == 5
         assert h.actions == []
 
 class FakeBool(object):
@@ -378,6 +430,7 @@ class TestPlayMacro(object):
     def test_constants(self):
         assert PlayMacro.multi_instance
         assert PlayMacro.name == "playmacro"
+        assert PlayMacro.moves_mouse
 
 class TestWordprocessor(object):
 
