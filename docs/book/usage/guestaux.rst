@@ -228,4 +228,4 @@ When ready to record the macro, hit the ``Record`` button. After this, take your
         :align: center
 
 After hitting stop, the macro exe will automatically be uploaded back to the Cuckoo host, where it will be made available for use as soon as the macro recording task
-is finished. It is possible to record multiple macros in a single session. Just be sure to change the ``Name`` field in the recorder.
+is finished. It is possible to record multiple macros in a single session. Just be sure to change the ``Name`` field in the recorder. The recording task will only finish after the recorder is closed.
