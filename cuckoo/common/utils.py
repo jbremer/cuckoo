@@ -366,7 +366,14 @@ def get_macro_paths(options, schedule={}):
     for actionkey in ["sequential", "tasks", "recreation"]:
         for action in schedule.get(actionkey, []):
             if action.get("module") == "playmacro":
-                macro = action.get("data", {}).get("name")
+                data = action.get("data", {})
+                if not data:
+                    log.error(
+                        "Empty data field provided in 'playmacro' in human"
+                        " schedule"
+                    )
+                    continue
+                macro = data.get("name")
                 if macro:
                     tmp.append(macro)
 
