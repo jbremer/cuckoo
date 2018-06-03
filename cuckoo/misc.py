@@ -4,6 +4,7 @@
 
 import ctypes
 import errno
+import getpass
 import importlib
 import logging
 import multiprocessing
@@ -11,12 +12,6 @@ import os
 import subprocess
 import sys
 import types
-
-try:
-    import pwd
-    HAVE_PWD = True
-except ImportError:
-    HAVE_PWD = False
 
 import cuckoo
 
@@ -99,9 +94,7 @@ def mkdir(*args):
         os.mkdir(dirpath)
 
 def getuser():
-    if HAVE_PWD:
-        return pwd.getpwuid(os.getuid())[0]
-    return ""
+    return getpass.getuser()
 
 def load_signatures():
     """Loads additional Signatures from the Cuckoo Working Directory.
@@ -200,7 +193,9 @@ def drop_privileges(username):
     """Drops privileges to selected user.
     @param username: drop privileges to this username
     """
-    if not HAVE_PWD:
+    try:
+        import pwd
+    except ImportError:
         sys.exit(
             "Unable to import pwd required for dropping privileges (note that "
             "privilege dropping is not supported under Windows)!"

@@ -17,8 +17,7 @@ from cuckoo.common.structures import Structure
 from cuckoo.main import cuckoo_create
 from cuckoo.misc import (
     dispatch, cwd, set_cwd, getuser, mkdir, Popen, drop_privileges, make_list,
-    HAVE_PWD, is_linux, is_windows, is_macosx, decide_cwd, Pidfile,
-    format_command
+    is_linux, is_windows, is_macosx, decide_cwd, Pidfile, format_command
 )
 
 def return_value(value):
@@ -71,10 +70,10 @@ def test_cwd():
     with pytest.raises(RuntimeError):
         cwd("foo", analysis=None)
 
-@pytest.mark.skipif(not HAVE_PWD, reason="This test is not for Windows")
 def test_getuser():
-    # TODO This probably doesn't work on all platforms.
-    assert getuser() == subprocess.check_output(["id", "-un"]).strip()
+    if not is_windows():
+        # TODO This probably doesn't work on all platforms.
+        assert getuser() == subprocess.check_output(["id", "-un"]).strip()
 
 def test_mkdir():
     dirpath = tempfile.mkdtemp()
@@ -196,11 +195,11 @@ def test_decide_cwd():
         os.environ.pop("CUCKOO_CWD", None)
 
 @pytest.mark.skipif("sys.platform != 'linux2'")
-@mock.patch("cuckoo.misc.pwd")
+@mock.patch("pwd.getpwnam")
 @mock.patch("cuckoo.misc.os")
 def test_drop_privileges(p, q):
     drop_privileges("username")
-    q.getpwnam.assert_called_once_with("username")
+    q.assert_called_once_with("username")
     p.setgroups.assert_called_once()
     p.setgid.assert_called_once()
     p.setuid.assert_called_once()
