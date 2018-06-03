@@ -92,7 +92,7 @@ script:
   - cuckoo -d 2>&1|grep "Unable to bind ResultServer"
 
   # Run tests from the "tests" directory.
-  - py.test --cov=cuckoo
+  - py.test --cov=cuckoo -vv
 
 after_success:
   - coveralls
